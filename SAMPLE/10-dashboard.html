@@ -1,0 +1,4422 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BizFinOne · 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@100;200;300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ------------ TWEAK DEFAULTS ------------ */
+
+/* ---- 매입매출현황 (cfx) redesign ---- */
+.cfx {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 14px 16px 12px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.cfx-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.cfx-title {
+  font-family: var(--font); font-size: 15px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.02em;
+}
+.cfx-legend {
+  display: inline-flex; align-items: center; gap: 14px;
+  font-family: var(--font); font-size: 11.5px; font-weight: 600;
+  color: var(--muted); letter-spacing: -0.01em;
+}
+.cfx-legend .lg {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.cfx-legend .sw {
+  width: 10px; height: 10px; border-radius: 2px; display: inline-block;
+}
+.cfx-legend .sw.rev { background: var(--accent); }
+.cfx-legend .sw.exp { background: var(--moss); opacity: 0.72; }
+.cfx-legend .sw.net {
+  width: 16px; height: 2px; border-radius: 1px;
+  background: var(--ink); position: relative;
+}
+.cfx-legend .sw.net::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ink); border: 1.5px solid var(--surface);
+}
+.cfx-summary {
+  display: grid; grid-template-columns: 1fr 1fr 1.3fr;
+  gap: 12px; padding: 10px 0 2px;
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 12px;
+}
+.cfx-sum {
+  display: flex; flex-direction: column; gap: 3px; min-width: 0;
+}
+.cfx-sum-lbl {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  letter-spacing: -0.01em;
+}
+.cfx-dot { width: 7px; height: 7px; border-radius: 2px; display: inline-block; }
+.cfx-dot.rev { background: var(--accent); }
+.cfx-dot.exp { background: var(--moss); opacity: 0.7; }
+.cfx-sum-val {
+  font-family: var(--font-num); font-size: 16px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.03em; line-height: 1.1;
+  display: inline-flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+}
+.cfx-sum-val.acc { color: var(--accent); }
+.cfx-sum-val .u {
+  font-family: var(--font); font-size: 10px; font-weight: 700;
+  color: var(--muted); margin-left: 1px;
+}
+.cfx-pill {
+  font-family: var(--font); font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 999px;
+  background: var(--moss-tint, oklch(0.65 0.08 150 / 0.14));
+  color: var(--moss);
+  letter-spacing: -0.01em;
+}
+.cfx-pill.dn {
+  background: var(--rose-soft, oklch(0.6 0.19 28 / 0.12));
+  color: var(--rose, oklch(0.58 0.19 28));
+}
+
+/* ---- Vertical bar + line chart ---- */
+.cfx-chart-wrap {
+  position: relative; width: 100%;
+  padding-top: 4px;
+}
+.cfx-chart {
+  display: block; width: 100%; height: 240px;
+  overflow: visible;
+  font-family: var(--font-num);
+}
+.cfx-grid-line {
+  stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4;
+}
+.cfx-axis-label {
+  font-family: var(--font-num); font-size: 10px; font-weight: 600;
+  fill: var(--muted); letter-spacing: -0.01em;
+}
+.cfx-month-label {
+  font-family: var(--font); font-size: 11px; font-weight: 700;
+  fill: var(--muted); letter-spacing: -0.01em;
+}
+.cfx-month-label.current { fill: var(--accent); }
+.cfx-vbar {
+  transition: opacity .2s, filter .2s;
+  cursor: pointer;
+}
+.cfx-vbar.rev { fill: var(--accent); }
+.cfx-vbar.exp { fill: var(--moss); opacity: 0.72; }
+.cfx-group.dim .cfx-vbar { opacity: 0.28; }
+.cfx-group.dim .cfx-vbar.exp { opacity: 0.18; }
+.cfx-group.active .cfx-vbar { opacity: 1 !important; filter: drop-shadow(0 2px 6px oklch(0 0 0 / 0.12)); }
+.cfx-line-area {
+  fill: url(#cfxNetGrad); opacity: 0.18;
+}
+.cfx-line {
+  fill: none; stroke: var(--ink);
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.cfx-pt {
+  fill: var(--surface); stroke: var(--ink); stroke-width: 2;
+  transition: r .15s;
+}
+.cfx-pt.active { fill: var(--ink); r: 5; }
+.cfx-hover-zone {
+  fill: transparent; cursor: pointer;
+}
+.cfx-hover-zone:hover + .cfx-vline,
+.cfx-group.active .cfx-vline {
+  opacity: 1;
+}
+.cfx-vline {
+  stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3;
+  opacity: 0; transition: opacity .15s;
+  pointer-events: none;
+}
+
+.cfx-tooltip {
+  position: absolute; z-index: 3; pointer-events: none;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: 10px 12px;
+  box-shadow: 0 6px 20px oklch(0 0 0 / 0.1);
+  min-width: 160px;
+  opacity: 0; transform: translate(-50%, -100%);
+  transition: opacity .15s, transform .15s;
+  font-family: var(--font);
+}
+.cfx-tooltip.show { opacity: 1; }
+.cfx-tooltip .t-month {
+  font-size: 12px; font-weight: 800; color: var(--ink);
+  letter-spacing: -0.02em; margin-bottom: 6px;
+  padding-bottom: 6px; border-bottom: 1px dashed var(--line);
+}
+.cfx-tooltip .t-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; font-size: 11.5px; color: var(--ink-2);
+  font-weight: 600; padding: 2px 0;
+}
+.cfx-tooltip .t-row b {
+  font-family: var(--font-num); font-size: 12px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.02em;
+}
+.cfx-tooltip .t-row .dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 2px;
+  margin-right: 6px;
+}
+.cfx-tooltip .t-row .dot.rev { background: var(--accent); }
+.cfx-tooltip .t-row .dot.exp { background: var(--moss); opacity: 0.72; }
+.cfx-tooltip .t-row .label { display: inline-flex; align-items: center; }
+.cfx-tooltip .t-row.net {
+  margin-top: 4px; padding-top: 6px;
+  border-top: 1px dashed var(--line);
+}
+.cfx-tooltip .t-row.net b { color: var(--accent); }
+
+
+/* ---- 계좌 잔액 (acx) redesign ---- */
+.acx {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 14px 16px 8px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.acx-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+}
+.acx-title-wrap { display: flex; flex-direction: column; gap: 2px; }
+.acx-title {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font); font-size: 15px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.02em;
+}
+.acx-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+}
+.acx-sub {
+  font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: -0.01em;
+}
+.acx-refresh {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: transparent; border: 1px solid var(--line);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--muted); cursor: pointer; flex-shrink: 0;
+}
+.acx-refresh:hover { color: var(--ink); border-color: var(--ink-2); }
+.acx-refresh svg { width: 13px; height: 13px; }
+
+.acx-segs {
+  display: inline-flex; gap: 2px; padding: 2px;
+  background: var(--surface-2); border-radius: var(--r-md);
+  align-self: flex-start;
+}
+.acx-seg {
+  background: transparent; border: 0;
+  padding: 5px 11px 5px 11px;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  color: var(--muted); cursor: pointer; letter-spacing: -0.01em;
+  border-radius: calc(var(--r-md) - 3px);
+}
+.acx-seg:hover { color: var(--ink-2); }
+.acx-seg.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px oklch(0 0 0 / 0.06); }
+.acx-seg .cnt {
+  font-family: var(--font-num); font-size: 10px; font-weight: 700;
+  padding: 1px 5px; border-radius: 999px;
+  background: var(--surface-2); color: var(--muted);
+}
+.acx-seg.active .cnt { background: var(--accent); color: var(--surface); }
+
+.acx-hero {
+  padding: 12px 14px; border-radius: var(--r-md);
+  background: linear-gradient(180deg, oklch(from var(--accent) l c h / 0.05), oklch(from var(--accent) l c h / 0.01));
+  border: 1px solid oklch(from var(--accent) l c h / 0.12);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.acx-hero-lbl {
+  font-size: 10.5px; font-weight: 700; color: var(--muted);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.acx-hero-val {
+  font-family: var(--font-num); font-size: 28px; font-weight: 800;
+  color: var(--accent); letter-spacing: -0.04em; line-height: 1.05;
+  display: inline-flex; align-items: baseline; gap: 3px;
+}
+.acx-hero-val .u {
+  font-family: var(--font); font-size: 13px; font-weight: 700;
+  color: var(--accent); opacity: 0.75; margin-left: 2px;
+}
+.acx-hero-meta { margin-top: 2px; }
+.acx-trend {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 999px;
+}
+.acx-trend.up {
+  background: var(--moss-tint, oklch(0.65 0.08 150 / 0.14));
+  color: var(--moss);
+}
+.acx-trend svg { width: 11px; height: 11px; }
+
+.acx-list {
+  display: flex; flex-direction: column; gap: 1px;
+  background: var(--line-soft, var(--line));
+  border-radius: var(--r-md); overflow: hidden;
+}
+.acx-item {
+  display: grid; grid-template-columns: 34px 1fr auto;
+  gap: 12px; align-items: center;
+  background: var(--surface);
+  padding: 11px 12px;
+  transition: background .15s;
+  cursor: pointer;
+}
+.acx-item:hover { background: var(--surface-2); }
+.acx-item.primary { background: oklch(from var(--accent) l c h / 0.04); }
+.acx-item.primary:hover { background: oklch(from var(--accent) l c h / 0.08); }
+.acx-logo {
+  width: 34px; height: 34px; border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line); background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+}
+.acx-logo svg { width: 100%; height: 100%; display: block; }
+.acx-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.acx-line1 {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font); font-size: 13px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.02em;
+}
+.acx-name { white-space: nowrap; }
+.acx-badge {
+  font-family: var(--font); font-size: 9.5px; font-weight: 700;
+  padding: 1px 5px; border-radius: 3px;
+  background: var(--accent); color: var(--surface); letter-spacing: -0.01em;
+}
+.acx-acc {
+  font-family: var(--font-mono, var(--font-num));
+  font-size: 10.5px; color: var(--muted); font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.acx-share-bar {
+  height: 3px; border-radius: 999px;
+  background: var(--bg-2, var(--surface-2));
+  margin-top: 4px; overflow: hidden;
+}
+.acx-share-bar span {
+  display: block; height: 100%;
+  background: var(--accent); opacity: 0.7; border-radius: 999px;
+}
+.acx-item.primary .acx-share-bar span { opacity: 1; }
+.acx-right {
+  text-align: right; display: flex; flex-direction: column; gap: 1px;
+}
+.acx-bal {
+  font-family: var(--font-num); font-size: 14px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.03em;
+  display: inline-flex; align-items: baseline; gap: 1px; justify-content: flex-end;
+}
+.acx-bal .u {
+  font-family: var(--font); font-size: 10.5px; font-weight: 700;
+  color: var(--muted); margin-left: 1px;
+}
+.acx-share {
+  font-family: var(--font-num); font-size: 10.5px; font-weight: 700;
+  color: var(--muted); letter-spacing: -0.01em;
+}
+
+.acx-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 2px 0 4px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
+.acx-add {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 11px; border-radius: 8px;
+  background: var(--surface-2); border: 0;
+  font-family: var(--font); font-size: 11.5px; font-weight: 700;
+  color: var(--ink-2); letter-spacing: -0.01em; cursor: pointer;
+}
+.acx-add:hover { background: var(--accent); color: var(--surface); }
+.acx-add svg { width: 12px; height: 12px; }
+.acx-all {
+  background: transparent; border: 0; padding: 6px 4px;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font); font-size: 11.5px; font-weight: 700;
+  color: var(--muted); cursor: pointer; letter-spacing: -0.01em;
+}
+.acx-all:hover { color: var(--ink); }
+.acx-all svg { width: 12px; height: 12px; }
+
+</style>
+<script>
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "accent": "terracotta",
+  "density": "compact",
+  "showGreeting": true,
+  "font": "pretendard"
+}/*EDITMODE-END*/;
+</script>
+
+<style>
+/* ============ TOKENS ============ */
+:root {
+  /* Warm cream palette */
+  --bg:          #F6F2EA;
+  --bg-2:        #EFEADE;
+  --surface:     #FFFDF8;
+  --surface-2:   #FAF6EE;
+  --line:        #E8E1D0;
+  --line-soft:   #F0EADC;
+
+  --ink:         #1F1B16;
+  --ink-2:       #3A342B;
+  --muted:       #7A7266;
+  --muted-2:     #A69E8F;
+
+  /* Accents — terracotta default */
+  --accent:      #D97757;
+  --accent-ink:  #A94D2C;
+  --accent-soft: #F4D9CA;
+  --accent-tint: #FBEFE7;
+
+  --moss:        #5B8770;
+  --moss-soft:   #D5E3D9;
+  --moss-tint:   #E8F0EB;
+
+  --amber:       #C89B3C;
+  --amber-soft:  #F0E0B3;
+
+  --rose:        #B85464;
+  --rose-soft:   #F0D4D9;
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-2xl: 32px;
+  --r-pill: 999px;
+
+  /* Shadows — soft warm */
+  --sh-xs: 0 1px 2px rgba(60, 40, 20, 0.04);
+  --sh-sm: 0 2px 8px rgba(60, 40, 20, 0.05), 0 1px 2px rgba(60, 40, 20, 0.04);
+  --sh-md: 0 8px 24px rgba(60, 40, 20, 0.06), 0 2px 4px rgba(60, 40, 20, 0.04);
+  --sh-lg: 0 20px 48px rgba(60, 40, 20, 0.08), 0 4px 8px rgba(60, 40, 20, 0.04);
+
+  --ease: cubic-bezier(.2,.7,.2,1);
+  --ease-bounce: cubic-bezier(.34, 1.2, .64, 1);
+
+  /* Density */
+  --gap: 20px;
+  --card-pad: 24px;
+
+  /* Font */
+  --font-kr: 'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
+  --font-num: 'Inter', var(--font-kr);
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Accent variants */
+[data-accent="terracotta"] {
+  --accent: #D97757; --accent-ink: #A94D2C;
+  --accent-soft: #F4D9CA; --accent-tint: #FBEFE7;
+}
+[data-accent="moss"] {
+  --accent: #5B8770; --accent-ink: #3D6150;
+  --accent-soft: #D5E3D9; --accent-tint: #E8F0EB;
+}
+[data-accent="indigo"] {
+  --accent: #6B63C7; --accent-ink: #4A418F;
+  --accent-soft: #DAD6F1; --accent-tint: #ECE9F8;
+}
+[data-accent="amber"] {
+  --accent: #C89B3C; --accent-ink: #91701E;
+  --accent-soft: #F0E0B3; --accent-tint: #F7EDCF;
+}
+[data-accent="rose"] {
+  --accent: #B85464; --accent-ink: #8A3846;
+  --accent-soft: #F0D4D9; --accent-tint: #F8E6EA;
+}
+
+/* Density */
+[data-density="compact"] {
+  --gap: 14px;
+  --card-pad: 18px;
+}
+[data-density="comfortable"] {
+  --gap: 20px;
+  --card-pad: 24px;
+}
+
+/* Font */
+[data-font="pretendard"] { --font-kr: 'Pretendard Variable', Pretendard, sans-serif; }
+[data-font="paperlogy"] { --font-kr: 'Paperlogy', 'Pretendard Variable', sans-serif; }
+[data-font="plex"] { --font-kr: 'IBM Plex Sans KR', 'Pretendard Variable', sans-serif; }
+
+/* Dark */
+[data-theme="dark"] {
+  --bg:        #17130F;
+  --bg-2:      #1F1A15;
+  --surface:   #221D17;
+  --surface-2: #2A241D;
+  --line:      #352E24;
+  --line-soft: #2C261F;
+
+  --ink:       #F6F0E5;
+  --ink-2:     #E3DBCC;
+  --muted:     #A69E8F;
+  --muted-2:   #7A7266;
+
+  --accent-tint: #2A2018;
+  --accent-soft: #3D2C22;
+  --moss-tint:   #1D2620;
+  --moss-soft:   #2C3E32;
+  --amber-soft:  #3D321A;
+  --rose-soft:   #3D2429;
+
+  --sh-xs: 0 1px 2px rgba(0,0,0,0.3);
+  --sh-sm: 0 2px 8px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --sh-md: 0 8px 24px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+  --sh-lg: 0 20px 48px rgba(0,0,0,0.6), 0 4px 8px rgba(0,0,0,0.4);
+}
+[data-theme="dark"][data-accent="terracotta"] { --accent: #E89075; --accent-ink: #F2AB94; }
+[data-theme="dark"][data-accent="moss"] { --accent: #82B09A; --accent-ink: #A0C7B3; }
+[data-theme="dark"][data-accent="indigo"] { --accent: #968EE0; --accent-ink: #B4AEEA; }
+[data-theme="dark"][data-accent="amber"] { --accent: #E0B35E; --accent-ink: #EDC77F; }
+[data-theme="dark"][data-accent="rose"] { --accent: #D27A88; --accent-ink: #E09BA6; }
+
+/* ============ RESET / BASE ============ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-kr);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background .4s var(--ease), color .4s var(--ease);
+}
+button { font-family: inherit; background: none; border: 0; cursor: pointer; color: inherit; }
+a { color: inherit; text-decoration: none; }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.mono { font-family: var(--font-num); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ============ LAYOUT ============ */
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+.sidenav {
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 20px;
+  margin-bottom: 8px;
+}
+.brand-mark {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.04em;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.12);
+}
+.brand-name { font-weight: 800; font-size: 17px; letter-spacing: -0.02em; }
+.brand-sub { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 1px; }
+.nav-section {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 16px 12px 8px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  transition: all .18s var(--ease);
+  position: relative;
+}
+.nav-item svg { width: 18px; height: 18px; stroke-width: 1.8; color: var(--muted); flex-shrink: 0; }
+.nav-item:hover { background: var(--surface); color: var(--ink); }
+.nav-item:hover svg { color: var(--ink-2); }
+.nav-item.active {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+.nav-item.active svg { color: var(--accent); }
+.nav-item .count {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-weight: 700;
+}
+.nav-item.active .count {
+  background: var(--accent);
+  color: white;
+}
+.nav-spacer { flex: 1; }
+
+.company-card {
+  margin-top: 224px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.company-avatar {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-ink));
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+.company-name { font-weight: 700; font-size: 13px; }
+.company-role { font-size: 11px; color: var(--muted); }
+.cashflow-company {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border-left: 1px solid var(--line);
+  margin-left: 4px; padding-left: 12px;
+}
+
+/* ============ MAIN ============ */
+.main {
+  padding: 28px 32px 48px;
+  max-width: 1600px;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.search {
+  flex: 1;
+  max-width: 460px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  color: var(--muted);
+  font-size: 13px;
+  transition: border-color .2s;
+}
+.search:hover, .search:focus-within { border-color: var(--accent); }
+.search input {
+  flex: 1;
+  background: none;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  color: var(--ink);
+}
+.search .kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+}
+.top-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.icon-btn {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink-2);
+  transition: all .2s var(--ease);
+  position: relative;
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+.icon-btn svg { width: 18px; height: 18px; stroke-width: 1.8; }
+.icon-btn .ping {
+  position: absolute; top: 9px; right: 9px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* ============ GREETING ============ */
+.greeting {
+  margin-bottom: var(--gap);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0;
+}
+.greeting h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+.greeting h1 .wave { display: inline-block; animation: wave 2.5s ease-in-out infinite; transform-origin: 70% 70%; }
+@keyframes wave {
+  0%, 60%, 100% { transform: rotate(0); }
+  10%, 30% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(10deg); }
+}
+.greeting .sub {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 6px;
+  font-weight: 500;
+}
+.greeting .sub b { color: var(--ink-2); font-weight: 700; }
+
+.period-toggle {
+  display: inline-flex;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+.period-toggle button {
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  border-radius: var(--r-pill);
+  transition: all .18s var(--ease);
+}
+.period-toggle button.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+[data-theme="dark"] .period-toggle button.active { background: var(--accent); color: white; }
+.period-toggle button:not(.active):hover { color: var(--ink); }
+
+/* ============ BENTO ============ */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--gap);
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  padding: var(--card-pad);
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease), border-color .2s;
+  position: relative;
+  overflow: hidden;
+}
+.card.hoverable:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sh-md);
+  border-color: var(--line);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.015em;
+}
+.card-title .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.card-title-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.card-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.45;
+}
+.kpi-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3, var(--muted));
+  background: var(--surface-soft, rgba(0,0,0,0.04));
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.card-link {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: color .2s;
+}
+.card-link:hover { color: var(--accent); }
+.card-link svg { width: 12px; height: 12px; }
+
+/* KPI cards (col-span 3 each) */
+.kpi { grid-column: span 3; }
+.kpi .value {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.kpi .value .won {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 2px;
+}
+.kpi .value .sign { color: var(--accent); margin-right: 2px; }
+.kpi .spark { margin-top: 10px; height: 32px; width: 100%; }
+.kpi .trend {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--r-pill);
+}
+.trend.up { background: var(--moss-tint); color: var(--moss); }
+.trend.down { background: var(--rose-soft); color: var(--rose); }
+.trend.flat { background: var(--bg-2); color: var(--muted); }
+.trend svg { width: 11px; height: 11px; stroke-width: 2.8; }
+
+/* KPI header icon */
+.kpi .k-icon {
+  width: 30px; height: 30px;
+  border-radius: var(--r-md);
+  display: grid; place-items: center;
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.kpi .k-icon svg { width: 15px; height: 15px; stroke-width: 2; }
+.kpi.k-moss .k-icon { background: var(--moss-tint); color: var(--moss); }
+.kpi.k-amber .k-icon { background: var(--amber-soft); color: var(--amber); }
+.kpi.k-rose .k-icon { background: var(--rose-soft); color: var(--rose); }
+
+/* Cashflow big card */
+.c-cashflow { grid-column: span 8; min-height: 280px; display: flex; flex-direction: column; }
+.chart-wrap { flex: 1; position: relative; margin-top: 6px; }
+.chart-wrap svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.chart-legend {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.legend-item .sw {
+  width: 10px; height: 10px;
+  border-radius: 3px;
+}
+.chart-summary {
+  display: flex;
+  gap: 32px;
+  padding: 14px 0 18px;
+  border-bottom: 1px dashed var(--line);
+  margin-bottom: 14px;
+}
+.chart-summary .item .lbl {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.chart-summary .item .val {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.chart-summary .item .val.acc { color: var(--accent); }
+.chart-summary .item .val.moss { color: var(--moss); }
+.tooltip {
+  position: absolute;
+  background: var(--ink);
+  color: var(--bg);
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+  box-shadow: var(--sh-md);
+  z-index: 10;
+}
+.tooltip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--ink);
+}
+.tooltip .r { color: var(--accent); }
+.tooltip .g { color: #9BCFAE; }
+.tooltip .row { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.tooltip .row:first-child { margin-top: 0; }
+.tooltip b { font-family: var(--font-num); }
+.tooltip .label { font-weight: 700; color: var(--bg); margin-bottom: 6px; font-size: 11px; opacity: 0.7; }
+
+/* ===== Cashflow redesign: hero + monthly list ===== */
+.cf-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 28px;
+  margin-top: 14px;
+  flex: 1;
+  min-height: 0;
+}
+.cf-hero {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, oklch(from var(--accent) l c h / 0.06), oklch(from var(--accent) l c h / 0.015));
+  border: 1px solid oklch(from var(--accent) l c h / 0.12);
+}
+.cf-hero-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cf-hero-value {
+  font-family: var(--font-num);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+  margin-top: 4px;
+  line-height: 1.05;
+  display: flex;
+  align-items: baseline;
+}
+.cf-hero-value .sign { margin-right: 1px; }
+.cf-hero-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--moss);
+  background: var(--moss-tint, oklch(0.65 0.08 150 / 0.12));
+  padding: 4px 8px;
+  border-radius: 999px;
+  align-self: flex-start;
+}
+.cf-hero-delta svg { width: 11px; height: 11px; }
+.cf-spark {
+  width: 100%;
+  height: 42px;
+  margin-top: 14px;
+  display: block;
+}
+.cf-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+.cf-hero-chip-lbl {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+.cf-hero-chip-val {
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.cf-hero-chip-val.acc { color: var(--accent); }
+.cf-hero-chip-val.moss { color: var(--moss); }
+.cf-hero-chip-val .u {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 1px;
+}
+
+.cf-monthly {
+  display: flex;
+  flex-direction: column;
+  padding-top: 4px;
+  min-width: 0;
+}
+.cf-row {
+  display: grid;
+  grid-template-columns: 72px 1.2fr 1.2fr 1.4fr;
+  align-items: center;
+  column-gap: 12px;
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--line-soft);
+  font-family: var(--font-num);
+  font-size: 13px;
+}
+.cf-row:last-child { border-bottom: none; }
+.cf-row.cf-head {
+  padding: 6px 6px 8px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cf-row.cf-head .cf-c-rev,
+.cf-row.cf-head .cf-c-exp,
+.cf-row.cf-head .cf-c-net { text-align: right; }
+.cf-row.current { background: oklch(from var(--accent) l c h / 0.05); border-radius: var(--r-sm); }
+.cf-row.current + .cf-row,
+.cf-row.current { border-bottom-color: transparent; }
+
+.cf-c-month {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cf-row.current .cf-c-month { color: var(--accent); }
+.cf-now {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--accent);
+  background: oklch(from var(--accent) l c h / 0.12);
+  padding: 2px 6px;
+  border-radius: 999px;
+  letter-spacing: 0;
+}
+
+.cf-c-rev, .cf-c-exp, .cf-c-net {
+  text-align: right;
+  white-space: nowrap;
+}
+.cf-c-rev { color: var(--ink); font-weight: 700; }
+.cf-c-exp { color: var(--muted); font-weight: 600; }
+.cf-num { letter-spacing: -0.02em; }
+.cf-won {
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.cf-c-net {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.cf-net-top {
+  font-weight: 800;
+  color: var(--moss);
+  letter-spacing: -0.02em;
+}
+.cf-net-sign { margin-right: 1px; }
+.cf-net-bar {
+  height: 3px;
+  width: 100%;
+  max-width: 140px;
+  background: var(--line-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cf-net-bar span {
+  display: block;
+  height: 100%;
+  background: var(--moss);
+  opacity: 0.55;
+  border-radius: 2px;
+  transition: width .5s cubic-bezier(.22,1,.36,1);
+}
+.cf-row.current .cf-net-bar span { opacity: 0.85; }
+
+@media (max-width: 1100px) {
+  .cf-layout { grid-template-columns: 1fr; gap: 18px; }
+  .cf-hero-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Net profit card */
+.c-net { grid-column: span 4; display: flex; flex-direction: column; }
+.net-big {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin-top: 4px;
+  color: var(--ink);
+}
+.net-big .won { font-size: 18px; font-weight: 600; color: var(--muted); margin-left: 3px; }
+.net-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 13px;
+}
+.net-row:last-child { border-bottom: 0; }
+.net-row .k { color: var(--muted); font-weight: 500; }
+.net-row .v { font-weight: 700; }
+.net-row .v.in { color: var(--moss); }
+.net-row .v.out { color: var(--rose); }
+.mini-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-2);
+  margin: 14px 0 0;
+}
+.mini-bar span { height: 100%; }
+.mini-bar .in-bar { background: var(--moss); }
+.mini-bar .out-bar { background: var(--accent); }
+
+/* Todo card */
+.c-todo { grid-column: span 4; }
+.todo-list { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.todo-item:last-child { border-bottom: 0; }
+.todo-check {
+  width: 18px; height: 18px;
+  border-radius: 6px;
+  border: 2px solid var(--line);
+  flex-shrink: 0;
+  transition: all .2s var(--ease);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.todo-check.done {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.todo-check.done::after {
+  content: '';
+  width: 8px; height: 5px;
+  border-left: 2px solid white;
+  border-bottom: 2px solid white;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+.todo-text { flex: 1; font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
+.todo-item.done .todo-text { color: var(--muted); text-decoration: line-through; }
+.todo-meta { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.todo-meta.urgent { color: var(--accent); }
+
+/* Account card */
+.c-accounts { grid-column: span 4; }
+.acc-total {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 2px;
+}
+.acc-total .won { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 2px; }
+.acc-sub { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 16px; }
+.acc-list { display: flex; flex-direction: column; gap: 10px; }
+.acc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  transition: all .2s var(--ease);
+  cursor: pointer;
+}
+.acc-row:hover { background: var(--accent-tint); }
+.acc-logo {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-weight: 700;
+  font-size: 11px;
+  color: white;
+  flex-shrink: 0;
+}
+.acc-info { flex: 1; min-width: 0; }
+.acc-name { font-weight: 700; font-size: 13px; }
+.acc-num { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+.acc-bal { font-weight: 700; font-size: 14px; }
+
+/* Policy card */
+.c-policy { grid-column: span 4; }
+.policy-list { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.policy-item {
+  padding: 14px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  transition: all .2s var(--ease);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.policy-item:hover {
+  border-color: var(--accent);
+  transform: translateX(2px);
+}
+.policy-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity .2s;
+}
+.policy-item:hover::before { opacity: 1; }
+.policy-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.policy-title { font-weight: 700; font-size: 13.5px; letter-spacing: -0.01em; }
+.policy-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--moss-tint);
+  color: var(--moss);
+  flex-shrink: 0;
+}
+.policy-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.policy-meta .d-day {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ---- 정책자금 신청하기 carousel (polf) ---- */
+.polf {
+  background: linear-gradient(180deg, oklch(from var(--accent) l c h / 0.04), oklch(from var(--accent) l c h / 0.01));
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 18px 20px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.polf-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 4px;
+}
+.polf-title-block { min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.polf-title {
+  font-family: var(--font); font-size: 15px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.polf-sub {
+  font-family: var(--font); font-size: 11.5px; font-weight: 500;
+  color: var(--muted); letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+.polf-ctl {
+  display: inline-flex; gap: 6px; flex-shrink: 0;
+}
+.polf-ctl-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--line);
+  color: var(--muted); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: color .15s, border-color .15s, background .15s;
+  padding: 0;
+}
+.polf-ctl-btn:hover {
+  color: var(--ink); border-color: var(--ink-2);
+  background: var(--surface);
+}
+.polf-ctl-btn svg { width: 14px; height: 14px; stroke-width: 2.2; }
+.polf-ctl-btn[data-polf="toggle"] .icon-play { display: none; }
+.polf-ctl-btn[data-polf="toggle"].paused .icon-pause { display: none; }
+.polf-ctl-btn[data-polf="toggle"].paused .icon-play { display: inline-block; }
+
+.polf-viewport {
+  overflow: hidden;
+  margin: 0 -4px;
+  padding: 22px 4px 10px;
+}
+.polf-track {
+  display: flex; gap: 12px;
+  transition: transform .5s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+.polf-slide {
+  flex: 0 0 calc(50% - 6px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 22px 20px 18px;
+  box-shadow: 0 2px 8px oklch(0 0 0 / 0.04);
+  position: relative;
+  display: flex; flex-direction: column;
+  min-height: 200px;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+.polf-slide:hover {
+  border-color: var(--ink-3, var(--line));
+  box-shadow: 0 6px 18px oklch(0 0 0 / 0.08);
+  transform: translateY(-2px);
+}
+.polf-chips {
+  position: absolute; left: 16px; top: -12px;
+  display: inline-flex; align-items: center;
+}
+.polf-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 56px; height: 26px; padding: 0 10px;
+  border-radius: 999px;
+  font-family: var(--font); font-size: 11px; font-weight: 700;
+  color: var(--surface); letter-spacing: -0.01em;
+  box-shadow: 0 2px 6px oklch(0 0 0 / 0.1);
+  border: 2px solid var(--surface);
+}
+.polf-chip.type.type-agency { background: oklch(0.55 0.08 190); }
+.polf-chip.type.type-direct { background: oklch(0.55 0.14 250); }
+.polf-chip.state.state-open {
+  background: oklch(0.55 0.2 0);
+  margin-left: -6px;
+}
+.polf-chip.state.state-soon {
+  background: oklch(0.62 0.14 60);
+  margin-left: -6px;
+}
+.polf-chip.state.state-closed {
+  background: oklch(0.55 0 0);
+  margin-left: -6px;
+}
+.polf-sname {
+  font-family: var(--font); font-size: 16px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.025em;
+  line-height: 1.3;
+  margin-top: 16px;
+}
+.polf-sdate {
+  font-family: var(--font); font-size: 11.5px; font-weight: 500;
+  color: var(--muted); letter-spacing: -0.01em;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+.polf-sdate b {
+  font-family: var(--font-num); font-weight: 700; color: var(--ink-2);
+}
+.polf-btn {
+  margin-top: auto;
+  height: 44px;
+  background: var(--accent); color: var(--surface);
+  border: 0; border-radius: 999px;
+  font-family: var(--font); font-size: 13.5px; font-weight: 800;
+  letter-spacing: -0.02em; cursor: pointer;
+  transition: filter .15s, transform .15s;
+  margin-top: 20px;
+}
+.polf-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.polf-btn:active { filter: brightness(0.95); transform: translateY(0); }
+
+.polf-dots {
+  display: inline-flex; justify-content: center; gap: 6px;
+  margin-top: 14px; width: 100%;
+}
+.polf-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--line); border: 0; padding: 0;
+  cursor: pointer;
+  transition: background .2s, width .2s;
+}
+.polf-dot.active { background: var(--accent); width: 18px; border-radius: 999px; }
+
+@media (max-width: 560px) {
+  .polf-slide { flex: 0 0 calc(100% - 0px); }
+}
+
+/* ---- 거래내역 매칭 현황 (Wemembers Warm & Soft) ---- */
+.wm-match {
+  --wm-border: #efede7;
+  --wm-border-strong: #e6e2db;
+  --wm-muted-2: #a59f98;
+  --wm-coral: #d96a54;
+  --wm-coral-soft: #fbedea;
+  --wm-coral-line: rgba(217, 106, 84, 0.22);
+  --wm-green: #679d84;
+  --wm-green-soft: #eaf3ee;
+  --wm-green-line: rgba(103, 157, 132, 0.22);
+  --wm-neutral-soft: #faf7f3;
+
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 14px 16px 12px;
+  display: flex; flex-direction: column; gap: 12px;
+  font-family: var(--font);
+  color: var(--ink);
+}
+.wm-match__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.wm-match__title {
+  margin: 0;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font); font-size: 15px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.02em; line-height: 1.2;
+}
+.wm-match__title .acx-dot { flex-shrink: 0; }
+
+/* Expand/Collapse toggle button */
+.wm-toggle {
+  background: var(--surface-2); border: 0;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--muted); cursor: pointer;
+  transition: background .15s, color .15s, transform .2s;
+  flex-shrink: 0;
+}
+.wm-toggle:hover { background: var(--wm-neutral-soft); color: var(--wm-ink); }
+.wm-toggle svg {
+  width: 16px; height: 16px;
+  transition: transform .2s;
+}
+.wm-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+.wm-collapse[hidden] { display: none; }
+
+/* Body wrapper */
+.wm-body {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: visible;
+}
+
+/* Summary grid */
+.wm-summary {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  padding: 16px 14px 16px;
+}
+.wm-summary__box {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 18px 18px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--surface-2, var(--wm-neutral-soft));
+  position: relative;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+.wm-summary__box:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(43, 40, 37, 0.06);
+}
+.wm-summary__box.is-active {
+  border-color: var(--wm-green);
+  box-shadow: 0 0 0 2px var(--wm-green-soft);
+}
+.wm-summary__box--alert {
+  border: 1.5px solid var(--wm-coral);
+  background: var(--wm-coral-soft);
+}
+.wm-summary__box--alert.is-active {
+  border-color: var(--wm-coral);
+  box-shadow: 0 0 0 2px rgba(217, 106, 84, 0.18);
+}
+.wm-summary__label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  color: var(--wm-muted); letter-spacing: -0.01em;
+}
+.wm-summary__box--alert .wm-summary__label { color: var(--wm-coral); }
+.wm-summary__label .d {
+  width: 6px; height: 6px; border-radius: 50%; display: inline-block;
+  background: var(--wm-green);
+}
+.wm-summary__box--alert .wm-summary__label .d { background: var(--wm-coral); }
+.wm-summary__value {
+  font-family: var(--font-num); font-size: 22px; font-weight: 800;
+  color: var(--wm-ink); letter-spacing: -0.035em; line-height: 1.05;
+  display: inline-flex; align-items: baseline; gap: 2px;
+}
+.wm-summary__box--alert .wm-summary__value { color: var(--wm-coral); }
+.wm-summary__value .u {
+  font-family: var(--font); font-size: 11.5px; font-weight: 700;
+  color: inherit; opacity: 0.68; margin-left: 3px;
+}
+.wm-summary__sub {
+  font-size: 11px; color: var(--wm-muted-2); font-weight: 500;
+  letter-spacing: -0.01em; margin-top: 2px;
+}
+.wm-summary__box--alert .wm-summary__sub { color: var(--wm-coral); opacity: 0.75; }
+
+/* List */
+.wm-list {
+  list-style: none; margin: 14px 0 0; padding: 6px 8px 10px;
+  display: flex; flex-direction: column;
+  max-height: 460px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--wm-border-strong) transparent;
+}
+.wm-list::-webkit-scrollbar { width: 6px; }
+.wm-list::-webkit-scrollbar-track { background: transparent; }
+.wm-list::-webkit-scrollbar-thumb {
+  background: var(--wm-border-strong); border-radius: 999px;
+}
+.wm-list::-webkit-scrollbar-thumb:hover { background: var(--wm-muted-2); }
+.wm-item {
+  padding: 10px 10px 12px;
+  border-radius: 12px;
+  transition: background .15s;
+  position: relative;
+}
+.wm-item + .wm-item::before {
+  content: ''; position: absolute; left: 10px; right: 10px; top: 0;
+  height: 1px; background: var(--wm-border);
+}
+.wm-item[data-wm-first]::before { display: none; }
+.wm-item[hidden] { display: none; }
+.wm-item:hover { background: var(--wm-neutral-soft); }
+
+.wm-item__parent {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.wm-badge {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 54px; height: 24px; padding: 0 8px;
+  border-radius: 6px;
+  font-family: var(--font); font-size: 11px; font-weight: 800;
+  letter-spacing: -0.01em; white-space: nowrap;
+}
+.wm-badge--incomplete {
+  background: var(--wm-coral-soft);
+  color: var(--wm-coral);
+  border: 1px solid var(--wm-coral-line);
+}
+.wm-badge--done {
+  background: var(--wm-green-soft);
+  color: var(--wm-green);
+  border: 1px solid var(--wm-green-line);
+}
+
+.wm-item__main {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.wm-item__title {
+  font-family: var(--font); font-size: 13.5px; font-weight: 700;
+  color: var(--wm-ink); letter-spacing: -0.02em; line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wm-item__meta {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font); font-size: 11px; font-weight: 500;
+  color: var(--wm-muted); letter-spacing: -0.01em;
+}
+.wm-item__meta .date {
+  font-family: var(--font-num); font-weight: 600;
+}
+.wm-item__meta .sep {
+  display: inline-block; width: 1px; height: 9px;
+  background: var(--wm-border-strong);
+}
+.wm-io {
+  font-family: var(--font); font-size: 11px; font-weight: 800;
+  letter-spacing: -0.01em; white-space: nowrap; line-height: 1;
+}
+.wm-io--in { color: var(--wm-green); }
+.wm-io--out { color: var(--wm-coral); }
+
+.wm-item__amount {
+  flex-shrink: 0;
+  font-family: var(--font-num); font-size: 14px; font-weight: 800;
+  letter-spacing: -0.03em; text-align: right; min-width: 100px;
+  color: var(--wm-ink);
+  display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 1px;
+}
+.wm-item__amount--in { color: var(--wm-green); }
+.wm-item__amount--out { color: var(--wm-coral); }
+.wm-item__amount .u {
+  font-family: var(--font); font-size: 10.5px; font-weight: 700;
+  color: var(--wm-muted); margin-left: 2px;
+}
+
+/* Detail (child) */
+.wm-item__detail {
+  margin-top: 10px;
+  margin-left: 66px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--wm-neutral-soft);
+  border: 1px solid var(--wm-border);
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font); font-size: 12px; color: var(--wm-ink);
+  letter-spacing: -0.01em; line-height: 1.35;
+  position: relative;
+}
+.wm-item__detail::before {
+  content: ''; position: absolute; left: -14px; top: 50%;
+  width: 8px; height: 8px; border-left: 1.5px solid var(--wm-border-strong);
+  border-bottom: 1.5px solid var(--wm-border-strong);
+  transform: translateY(-60%) rotate(0deg);
+  border-bottom-left-radius: 3px;
+}
+.wm-item__detail-date {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-num); font-size: 11px; font-weight: 700;
+  color: var(--wm-muted); letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+.wm-item__detail-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 800; color: var(--wm-ink); font-size: 12px;
+  flex-shrink: 0;
+}
+.wm-item__detail-label svg {
+  width: 13px; height: 13px; stroke-width: 2; color: var(--wm-green);
+}
+.wm-item__detail-doc {
+  font-family: var(--font-num); font-weight: 700; color: var(--wm-ink);
+  letter-spacing: -0.02em; font-size: 12px;
+}
+.wm-foot {
+  display: flex; justify-content: flex-end; align-items: center;
+  padding: 2px 10px 8px;
+  border-top: 1px dashed var(--wm-border);
+  padding-top: 8px;
+}
+.wm-all {
+  background: transparent; border: 0; padding: 6px 4px;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font); font-size: 11.5px; font-weight: 700;
+  color: var(--muted); cursor: pointer; letter-spacing: -0.01em;
+}
+.wm-all:hover { color: var(--ink); }
+.wm-all svg { width: 12px; height: 12px; }
+
+.wm-item__detail-ext {
+  margin-left: auto;
+  font-family: var(--font-num); font-weight: 700;
+  color: var(--wm-muted); font-size: 11.5px;
+  letter-spacing: -0.02em;
+}
+.wm-item__detail--empty {
+  background: var(--wm-coral-soft);
+  border: 1px solid var(--wm-coral-line);
+  color: var(--wm-coral);
+  font-weight: 800; font-size: 12.5px;
+  letter-spacing: -0.01em;
+  gap: 8px;
+}
+.wm-item__detail--empty svg {
+  width: 14px; height: 14px; stroke-width: 2.4; color: var(--wm-coral);
+  flex-shrink: 0;
+}
+
+/* Dimmed for done items */
+.wm-item--done .wm-item__title {
+  color: var(--wm-muted);
+  font-weight: 600;
+}
+.wm-item--done .wm-item__meta { opacity: 0.85; }
+.wm-item--done .wm-item__amount { opacity: 0.78; }
+.wm-item--done .wm-item__detail { opacity: 0.88; }
+
+/* Incomplete items get subtle emphasis */
+.wm-item--incomplete .wm-item__title {
+  color: var(--wm-ink);
+  font-weight: 800;
+}
+
+/* AR/AP Management card */
+.c-arap { grid-column: span 12; }
+.c-arap > .card-header { align-items: baseline; gap: 16px; }
+.c-arap > .card-header .card-link { flex-shrink: 0; }
+.arap-tabbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  margin: -4px 0 16px;
+}
+.arap-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0;
+}
+.arap-tab {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  position: relative;
+  letter-spacing: -0.01em;
+  font-family: inherit;
+  transition: color .15s;
+}
+.arap-tab:hover { color: var(--ink-2); }
+.arap-tab.active { color: var(--ink); }
+.arap-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 10px; right: 10px; bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+.arap-tab .arap-count {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.arap-tab.active .arap-count {
+  background: var(--accent-tint, var(--surface-2));
+  color: var(--accent);
+}
+
+.arap-month {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px;
+}
+.arap-month-btn,
+.arap-month-label {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  transition: background .15s, color .15s;
+  padding: 0;
+}
+.arap-month-btn {
+  width: 26px; height: 26px;
+  color: var(--muted);
+}
+.arap-month-btn:hover { background: var(--surface); color: var(--ink); }
+.arap-month-btn svg { width: 14px; height: 14px; }
+.arap-month-label {
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  gap: 6px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.arap-month-label:hover { background: var(--surface); }
+.arap-month-label .arap-month-cal {
+  width: 13px; height: 13px;
+  color: var(--accent);
+}
+
+.arap-body { padding: 0; }
+.arap-pane { display: none; }
+.arap-pane.active { display: block; }
+
+.arap-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  align-items: stretch;
+}
+.arap-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.arap-col-head {
+  display: grid;
+  gap: 12px;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+}
+.arap-col-head .arap-col-title {
+  grid-column: 1 / -1;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  text-transform: none;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--line-soft);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.arap-col-title .arap-col-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+}
+.arap-col-right .arap-col-title .arap-col-dot { background: var(--moss); }
+
+/* deposit cols: 입금일자, 금액, 적요 */
+.arap-col-left .arap-col-head { grid-template-columns: 90px 120px 1fr; }
+/* evidence cols: 증빙종류, 금액, 거래처 */
+.arap-col-right .arap-col-head { grid-template-columns: 62px 120px 1fr; }
+
+.arap-row {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background .15s;
+  align-items: center;
+}
+.arap-col-left .arap-row { grid-template-columns: 90px 120px 1fr; }
+.arap-col-right .arap-row { grid-template-columns: 62px 120px 1fr; }
+.arap-row:hover { background: var(--surface-2); }
+.arap-row:last-child { border-bottom: none; }
+
+.arap-time {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.arap-bank {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arap-date {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.arap-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-align: right;
+}
+.arap-amount.in { color: var(--accent); }
+.arap-memo {
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.arap-vendor {
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.arap-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+  width: fit-content;
+  min-width: 42px;
+}
+.arap-chip.tax { background: oklch(0.94 0.04 60); color: oklch(0.48 0.14 55); }
+.arap-chip.card { background: oklch(0.93 0.03 240); color: oklch(0.44 0.13 250); }
+.arap-chip.cash { background: oklch(0.94 0.05 150); color: oklch(0.42 0.12 155); }
+
+.arap-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  position: relative;
+}
+.arap-link-line {
+  width: 100%;
+  height: 1px;
+  background: var(--line);
+  position: relative;
+}
+.arap-row-pair {
+  display: contents;
+}
+.arap-link-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--muted-2);
+}
+.arap-link-cell:last-child { border-bottom: none; }
+.arap-link-cell svg {
+  width: 14px; height: 14px;
+  stroke: var(--muted-2);
+  stroke-width: 2;
+  fill: none;
+}
+.arap-link-cell.matched svg { stroke: var(--moss); }
+.arap-link-cell.unmatched svg { stroke: var(--rose, #c76a6a); opacity: .6; }
+
+.arap-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.arap-empty .arap-empty-icon {
+  width: 44px; height: 44px;
+  margin: 0 auto 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  display: grid; place-items: center;
+  color: var(--muted-2);
+}
+.arap-empty .arap-empty-icon svg { width: 22px; height: 22px; }
+.arap-empty b { color: var(--ink-2); font-weight: 700; display: block; margin-bottom: 4px; font-size: 14px; }
+
+.arap-summary {
+  display: flex;
+  gap: 24px;
+  padding: 14px 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--line-soft);
+  margin-top: 4px;
+}
+.arap-summary .arap-sum-item b {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.arap-summary .arap-sum-item.match b { color: var(--moss); }
+.arap-summary .arap-sum-item.unmatch b { color: var(--rose, #c76a6a); }
+
+@media (max-width: 900px) {
+  .arap-grid { grid-template-columns: 1fr; }
+  .arap-link { display: none; }
+}
+
+/* Unified AR table */
+.arap-utable {
+  display: flex;
+  flex-direction: column;
+}
+.arap-uhead,
+.arap-urow {
+  display: grid;
+  grid-template-columns: 56px 74px 88px 120px minmax(140px, 1.2fr) 56px 52px 110px minmax(100px, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+}
+.arap-uhead {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  padding: 9px 14px;
+}
+.arap-uhead-2row {
+  grid-template-rows: auto auto;
+  row-gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.arap-uhead-2row > .arap-uhead-group {
+  grid-row: 1;
+  padding: 9px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface-2);
+}
+.arap-uhead-2row > .arap-uhead-group-left  { grid-column: 1 / 6; }
+.arap-uhead-2row > .arap-uhead-group-right { grid-column: 6 / 10; }
+.arap-uhead-2row > .arap-uhead-group-left  { border-right: 1px solid var(--line); }
+.arap-uhead-2row > :not(.arap-uhead-group) {
+  grid-row: 2;
+  padding: 9px 0;
+  position: relative;
+}
+/* subtle column dividers between sub-columns in the bottom header row */
+.arap-uhead-2row > :nth-child(4)::before,
+.arap-uhead-2row > :nth-child(5)::before,
+.arap-uhead-2row > :nth-child(6)::before,
+.arap-uhead-2row > :nth-child(7)::before,
+.arap-uhead-2row > :nth-child(9)::before,
+.arap-uhead-2row > :nth-child(10)::before,
+.arap-uhead-2row > :nth-child(11)::before {
+  content: '';
+  position: absolute;
+  top: 4px; bottom: 4px;
+  left: 0;
+  width: 1px;
+  background: var(--line);
+  opacity: 0.7;
+}
+.arap-uhead-2row > :nth-child(3)  { padding-left: 14px; }     /* 거래일자 */
+.arap-uhead-2row > :nth-child(11) { padding-right: 14px; }    /* 거래처 (last) */
+.arap-urow {
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+  transition: background .15s;
+  position: relative;
+}
+.arap-urow:hover { background: var(--surface-2); }
+.arap-urow:last-child { border-bottom: none; }
+
+/* vertical divider between deposit (cols 1-5) and evidence (cols 6-9) groups */
+.arap-uhead > :nth-child(6),
+.arap-urow > :nth-child(6) {
+  position: relative;
+}
+.arap-urow > :nth-child(6)::before {
+  content: '';
+  position: absolute;
+  top: -10px; bottom: -10px;
+  left: -7px;
+  width: 1px;
+  background: var(--line);
+}
+
+.arap-link-mid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 999px;
+  background: var(--moss-tint, var(--surface-2));
+}
+.arap-link-mid svg {
+  width: 14px; height: 14px;
+  stroke: var(--moss);
+  fill: none;
+}
+.arap-urow.unmatched .arap-link-mid {
+  background: oklch(0.95 0.03 25 / 0.5);
+}
+.arap-urow.unmatched .arap-link-mid svg {
+  stroke: var(--rose, #c76a6a);
+}
+.arap-urow.unmatched { opacity: 0.75; }
+.arap-urow.unmatched .arap-memo { color: var(--muted); }
+
+.arap-muted { color: var(--muted-2) !important; }
+
+.arap-group-head {
+  display: grid;
+  grid-template-columns: 72px 130px minmax(140px, 1.2fr) 36px 72px 58px 130px minmax(120px, 1fr);
+  gap: 14px;
+  padding: 0 14px 8px;
+  align-items: center;
+}
+.arap-group-head .arap-group-left { grid-column: 1 / 4; }
+.arap-group-head .arap-group-right { grid-column: 5 / 9; }
+.arap-group {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.arap-group .arap-col-dot { background: var(--accent); }
+.arap-group .arap-col-dot.moss { background: var(--moss); }
+
+@media (max-width: 1100px) {
+  .arap-uhead, .arap-urow {
+    grid-template-columns: 52px 68px 78px 104px 1fr 52px 48px 96px 1fr;
+    gap: 9px;
+    font-size: 12.5px;
+  }
+}
+@media (max-width: 900px) {
+  .arap-group-head { display: none; }
+  .arap-uhead { display: none; }
+  .arap-urow {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+    padding: 14px;
+  }
+  .arap-urow > :nth-child(6)::before { display: none; }
+}
+
+/* Recent tx big */
+.c-recent { grid-column: span 12; padding: 0; overflow: hidden; }
+.recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--card-pad);
+  padding-bottom: 14px;
+}
+.recent-tabs { display: flex; gap: 4px; }
+.recent-tabs button {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  color: var(--muted);
+  transition: all .18s var(--ease);
+}
+.recent-tabs button.active {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+.tx-list { padding: 0 var(--card-pad) var(--card-pad); }
+.tx-row {
+  display: grid;
+  grid-template-columns: 60px 100px 1fr 140px 110px;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 4px;
+  border-top: 1px solid var(--line-soft);
+  transition: background .18s var(--ease);
+  border-radius: 8px;
+  margin: 0 -4px;
+}
+.tx-row:hover { background: var(--surface-2); }
+.tx-row .tx-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.tx-bank {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.tx-bank .bank-logo {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  display: grid; place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: white;
+}
+.tx-desc { font-size: 13.5px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+.tx-desc .tx-sub { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.tx-amount {
+  text-align: right;
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.tx-amount.in { color: var(--moss); }
+.tx-amount.out { color: var(--ink); }
+.tx-badge {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+}
+.tx-badge.ok { background: var(--moss-tint); color: var(--moss); }
+.tx-badge.warn { background: var(--amber-soft); color: var(--amber); }
+.tx-badge.tax { background: var(--accent-tint); color: var(--accent); }
+
+/* Tax heatmap */
+.c-heat { grid-column: span 4; }
+.heat-grid {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 3px;
+  margin-top: 8px;
+}
+.heat-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--bg-2);
+  transition: transform .15s;
+  cursor: pointer;
+}
+.heat-cell:hover { transform: scale(1.3); }
+.heat-cell[data-v="1"] { background: var(--accent-tint); }
+.heat-cell[data-v="2"] { background: var(--accent-soft); }
+.heat-cell[data-v="3"] { background: var(--accent); opacity: 0.7; }
+.heat-cell[data-v="4"] { background: var(--accent); }
+.heat-scale {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.heat-scale .s {
+  width: 10px; height: 10px;
+  border-radius: 3px;
+  background: var(--bg-2);
+}
+
+.c-accbar {
+  grid-column: span 12;
+  padding: 10px 14px;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+}
+.accbar-total {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 16px 0 6px;
+  border-right: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.accbar-total .lbl { font-size: 12px; color: var(--muted); font-weight: 600; }
+.accbar-total .val { font-size: 17px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+.accbar-total .chev { width: 24px; height: 24px; border-radius: 7px; background: var(--bg-2); display: grid; place-items: center; color: var(--muted); cursor: pointer; transition: all .2s; }
+.accbar-total .chev:hover { background: var(--accent-tint); color: var(--accent); }
+.accbar-total .chev:active svg { transform: rotate(-360deg); transition: transform .6s var(--ease); }
+.accbar-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 16px;
+  border-right: 1px solid var(--line);
+  transition: background .18s var(--ease);
+  flex-shrink: 0; cursor: pointer;
+}
+.accbar-item:hover { background: var(--surface-2); }
+.accbar-item .logo {
+  width: 32px; height: 32px; border-radius: 9px;
+  display: grid; place-items: center;
+  background: white;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.accbar-item .logo svg { width: 100%; height: 100%; display: block; }
+[data-theme="dark"] .accbar-item .logo { background: #FAFAF8; border-color: transparent; }
+.accbar-item .nm { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.accbar-item .bal { font-size: 13px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.accbar-more { margin-left: auto; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: var(--muted); flex-shrink: 0; align-self: center; margin-right: 4px; }
+.accbar-more:hover { background: var(--bg-2); color: var(--ink); }
+
+/* ============ TWEAKS PANEL ============ */
+.tweaks-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 300px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-lg);
+  padding: 20px;
+  z-index: 100;
+  display: none;
+  animation: slideUp .3s var(--ease);
+}
+.tweaks-panel.open { display: block; }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tweaks-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.tweaks-head h3 {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.tweaks-close {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  color: var(--muted);
+}
+.tweaks-close:hover { background: var(--bg-2); color: var(--ink); }
+.tweak-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line-soft);
+  font-size: 12.5px;
+}
+.tweak-row:last-child { border-bottom: 0; }
+.tweak-row .label { font-weight: 600; color: var(--ink-2); }
+.tweak-group {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--bg-2);
+  border-radius: var(--r-pill);
+}
+.tweak-group button {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: var(--r-pill);
+  color: var(--muted);
+  transition: all .15s var(--ease);
+}
+.tweak-group button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--sh-xs);
+}
+.tweak-swatches { display: inline-flex; gap: 6px; }
+.tweak-swatches button {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: all .15s var(--ease);
+}
+.tweak-swatches button.active {
+  border-color: var(--ink);
+  transform: scale(1.15);
+}
+[data-theme="dark"] .tweak-swatches button.active { border-color: var(--bg); }
+.switch {
+  width: 36px;
+  height: 20px;
+  background: var(--bg-2);
+  border-radius: var(--r-pill);
+  position: relative;
+  transition: background .2s;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform .2s var(--ease);
+  box-shadow: var(--sh-xs);
+}
+.switch.on { background: var(--accent); }
+.switch.on::after { transform: translateX(16px); }
+
+/* ============ ANIMATIONS ============ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.bento > .card {
+  animation: fadeUp .5s var(--ease) both;
+}
+.bento > .card:nth-child(1) { animation-delay: 0.02s; }
+.bento > .card:nth-child(2) { animation-delay: 0.05s; }
+.bento > .card:nth-child(3) { animation-delay: 0.08s; }
+.bento > .card:nth-child(4) { animation-delay: 0.11s; }
+.bento > .card:nth-child(5) { animation-delay: 0.14s; }
+.bento > .card:nth-child(6) { animation-delay: 0.17s; }
+.bento > .card:nth-child(7) { animation-delay: 0.20s; }
+.bento > .card:nth-child(8) { animation-delay: 0.23s; }
+.bento > .card:nth-child(9) { animation-delay: 0.26s; }
+
+@keyframes drawLine {
+  from { stroke-dashoffset: var(--dash-len, 2000); }
+  to { stroke-dashoffset: 0; }
+}
+.chart-line {
+  stroke-dasharray: var(--dash-len, 2000);
+  animation: drawLine 1.6s var(--ease) 0.3s both;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.chart-fill { animation: fadeIn 1s ease-out 1.2s both; }
+.chart-bar {
+  transform-origin: bottom;
+  animation: barGrow .7s var(--ease-bounce) both;
+}
+@keyframes barGrow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.chart-trend {
+  opacity: 0;
+  animation: trendFade .7s ease-out .55s forwards;
+}
+.chart-trend-dot {
+  opacity: 0;
+  animation: dotFade .35s ease-out both;
+}
+@keyframes trendFade {
+  from { opacity: 0; }
+  to { opacity: var(--trend-op, 1); }
+}
+@keyframes dotFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1200px) {
+  .kpi { grid-column: span 6; }
+  .c-cashflow { grid-column: span 12; }
+  .c-net { grid-column: span 6; }
+  .c-todo, .c-accounts, .c-policy, .c-heat { grid-column: span 6; }
+  .c-recent { grid-column: span 12; }
+}
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; }
+  .sidenav { display: none; }
+  .main { padding: 20px 16px 40px; }
+  .kpi, .c-cashflow, .c-net, .c-todo, .c-accounts, .c-policy, .c-recent, .c-heat {
+    grid-column: span 12;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-2); }
+
+/* ===========================================================
+   dashboard_2 redesign — narrow stream layout (ref: clobe.ai)
+   =========================================================== */
+.main.stream-main {
+  display: block !important;
+  padding: 0;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.main.stream-main .greeting,
+.main.stream-main .bento { display: none !important; }
+
+.stream {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 36px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+@media (max-width: 900px) {
+  .stream { padding: 22px 16px 60px; gap: 22px; }
+}
+
+/* header */
+.sh {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; margin-bottom: 0; position: relative;
+}
+.sh-pop {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 40;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-md); box-shadow: var(--sh-md, 0 4px 18px oklch(0 0 0 / 0.08));
+  padding: 10px; min-width: 240px;
+  font-family: var(--font);
+}
+.sh-pop[hidden] { display: none; }
+.sh-pop-year {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 13px; font-weight: 700; color: var(--ink);
+  padding: 4px 0 8px; border-bottom: 1px dashed var(--line); margin-bottom: 8px;
+}
+.sh-pop-year button {
+  width: 22px; height: 22px; padding: 0; border: 0; background: transparent;
+  cursor: pointer; color: var(--muted); border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.sh-pop-year button:hover { color: var(--ink); background: var(--surface-2); }
+.sh-pop-year button svg { width: 14px; height: 14px; }
+.sh-pop-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+}
+.sh-pop-grid button {
+  padding: 7px 0; border: 0; background: transparent;
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  color: var(--ink-2); border-radius: 6px; cursor: pointer;
+  letter-spacing: -0.01em;
+}
+.sh-pop-grid button:hover { background: var(--surface-2); color: var(--ink); }
+.sh-pop-grid button.active {
+  background: var(--accent); color: var(--surface);
+}
+.sh-period .arr {
+  width: 18px; height: 18px; padding: 0; border: 0; background: transparent;
+  cursor: pointer; color: var(--muted-2, var(--muted));
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 4px; font-size: 14px; line-height: 1;
+}
+.sh-period .arr:hover { background: var(--surface-2); color: var(--ink); }
+.sh-month {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: 0; padding: 4px 0;
+  font-family: var(--font); font-size: 18px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.03em; cursor: pointer;
+}
+.sh-month svg { width: 12px; height: 12px; stroke: var(--muted); stroke-width: 2; fill: none; }
+.sh-right { display: flex; align-items: center; gap: 10px; }
+.sh-period {
+  font-size: 11.5px; color: var(--muted); font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px; letter-spacing: -0.01em;
+}
+.sh-period .arr {
+  width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--muted-2); cursor: pointer; transition: color .15s;
+}
+.sh-period .arr:hover { color: var(--ink); }
+.sh-tabs {
+  display: inline-flex; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: 2px;
+}
+.sh-tabs button {
+  background: transparent; border: 0; padding: 5px 10px;
+  font-family: var(--font); font-size: 11.5px; font-weight: 600;
+  color: var(--muted); letter-spacing: -0.01em; cursor: pointer;
+  border-radius: calc(var(--r-md) - 3px); transition: all .15s;
+}
+.sh-tabs button:hover { color: var(--ink-2); }
+.sh-tabs button.active { background: var(--accent); color: oklch(0.99 0.005 50); }
+
+/* aggregator */
+.aggr {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 12px 16px;
+  display: grid; grid-template-columns: auto auto 1fr;
+  align-items: center; gap: 14px;
+}
+.aggr-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.aggr-logos { display: flex; align-items: center; }
+.aggr-logos .lg {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid var(--surface); background: var(--surface-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-num); font-size: 9px; font-weight: 800;
+  color: var(--ink); margin-left: -8px; flex-shrink: 0;
+}
+.aggr-logos .lg:first-child { margin-left: 0; }
+.aggr-logos .lg.b1 { background: oklch(0.88 0.09 60); color: oklch(0.4 0.12 60); }
+.aggr-logos .lg.b2 { background: oklch(0.88 0.08 210); color: oklch(0.4 0.11 210); }
+.aggr-logos .lg.b3 { background: oklch(0.88 0.09 140); color: oklch(0.4 0.11 140); }
+.aggr-logos .lg.b4 { background: oklch(0.88 0.09 330); color: oklch(0.4 0.11 330); }
+.aggr-text .t {
+  font-size: 12.5px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em;
+}
+.aggr-text .s {
+  font-size: 11px; color: var(--muted); margin-top: 1px; letter-spacing: -0.01em;
+}
+.aggr-add {
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 50%;
+  color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.aggr-add:hover { color: var(--accent); border-color: var(--accent); }
+.aggr-add svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 2; fill: none; }
+.aggr-right { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; justify-items: end; }
+.aggr-right .i { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.aggr-right .i .lbl {
+  font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: -0.01em;
+}
+.aggr-right .i .val {
+  font-family: var(--font-num); font-size: 12.5px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.02em;
+}
+
+/* block */
+.bk { display: flex; flex-direction: column; gap: 10px; }
+.bk-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+.bk-title {
+  font-family: var(--font); font-size: 12.5px; font-weight: 700;
+  color: var(--ink-2); letter-spacing: -0.01em;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.bk-title .q {
+  width: 13px; height: 13px; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--muted-2);
+}
+.bk-actions { display: inline-flex; align-items: center; gap: 14px; }
+.bk-action {
+  background: transparent; border: 0; padding: 0;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font); font-size: 11px; font-weight: 600;
+  color: var(--muted); cursor: pointer; letter-spacing: -0.01em; transition: color .15s;
+}
+.bk-action:hover { color: var(--ink); }
+.bk-action .dot { width: 6px; height: 6px; border-radius: 50%; }
+.bk-action .dot.ok { background: var(--moss); }
+.bk-action .dot.warn { background: oklch(0.7 0.16 70); }
+
+/* hero */
+.bk-hero {
+  font-family: var(--font-num); font-size: 30px; font-weight: 800;
+  letter-spacing: -0.035em; color: var(--ink); line-height: 1.1;
+}
+.bk-hero .u {
+  font-family: var(--font); font-size: 17px; font-weight: 700;
+  color: var(--ink-2); margin-left: 1px; letter-spacing: -0.02em;
+}
+.bk-delta { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: -0.01em; }
+.bk-delta .dn { color: oklch(0.6 0.19 28); font-weight: 700; }
+.bk-delta .up { color: var(--moss); font-weight: 700; }
+
+/* accordion */
+.acc-grp { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.acc-item {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); overflow: hidden; transition: all .15s;
+}
+.acc-head {
+  width: 100%; background: transparent; border: 0; padding: 13px 16px;
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  align-items: center; gap: 12px;
+  font-family: var(--font); text-align: left; cursor: pointer;
+}
+.acc-head .chev {
+  width: 12px; height: 12px; stroke: var(--muted); stroke-width: 2; fill: none;
+  transition: transform .2s;
+}
+.acc-item.open .acc-head .chev { transform: rotate(180deg); }
+.acc-head .name {
+  font-size: 13px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.acc-head .name .dot-alert {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: oklch(0.65 0.2 28); margin-left: 2px; display: inline-block;
+}
+.acc-head .delta-v {
+  font-family: var(--font-num); font-size: 12.5px; font-weight: 700;
+  color: oklch(0.6 0.19 28); letter-spacing: -0.02em;
+  min-width: 100px; text-align: right;
+}
+.acc-head .delta-v.zero, .acc-head .total-v.zero { color: var(--muted); }
+.acc-head .delta-v.pos { color: var(--moss); }
+.acc-head .total-v {
+  font-family: var(--font-num); font-size: 12.5px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.02em;
+  min-width: 110px; text-align: right;
+}
+.acc-body {
+  display: none;
+  border-top: 1px solid var(--line-soft);
+  padding: 12px 16px 14px;
+}
+.acc-item.open .acc-body { display: block; }
+.acc-warn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: oklch(0.48 0.14 60);
+  background: oklch(0.97 0.04 80); padding: 5px 10px;
+  border-radius: 999px; margin-bottom: 10px; font-weight: 600;
+}
+.bank-row {
+  display: grid; grid-template-columns: 32px 1fr auto auto;
+  align-items: center; gap: 12px; padding: 8px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.bank-row:first-of-type { border-top: 0; padding-top: 0; }
+.bank-logo {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-num); font-size: 10px; font-weight: 800;
+}
+.bank-logo.b1 { background: oklch(0.88 0.09 210); color: oklch(0.35 0.12 210); }
+.bank-logo.b2 { background: oklch(0.88 0.09 140); color: oklch(0.35 0.12 140); }
+.bank-logo.b3 { background: oklch(0.88 0.09 60); color: oklch(0.42 0.13 60); }
+.bank-logo.b4 { background: oklch(0.88 0.09 330); color: oklch(0.4 0.13 330); }
+.bank-info .n {
+  font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em;
+}
+.bank-info .a {
+  font-size: 10.5px; color: var(--muted); margin-top: 1px;
+  font-family: var(--font-num); letter-spacing: 0;
+}
+.bank-delta {
+  font-family: var(--font-num); font-size: 12px; font-weight: 700;
+  color: oklch(0.6 0.19 28); letter-spacing: -0.02em;
+  text-align: right; min-width: 100px;
+}
+.bank-delta.pos { color: var(--moss); }
+.bank-delta.zero { color: var(--muted); }
+.bank-bal {
+  font-family: var(--font-num); font-size: 12px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.02em;
+  text-align: right; min-width: 110px;
+}
+.toggle-row { display: flex; justify-content: flex-end; padding: 10px 0 0; }
+.toggle-cb {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer;
+}
+.toggle-cb input { margin: 0; accent-color: var(--accent); }
+.acc-more {
+  width: 100%; border: 1px dashed var(--line); background: transparent;
+  border-radius: var(--r-md); padding: 8px; text-align: center;
+  font-size: 11.5px; font-weight: 600; color: var(--muted);
+  cursor: pointer; margin-top: 10px; font-family: var(--font);
+  transition: all .15s;
+}
+.acc-more:hover { border-color: var(--accent); color: var(--accent); }
+
+/* split cards */
+.split2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.split-card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.split-title {
+  font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em;
+  display: inline-flex; align-items: baseline; gap: 3px;
+}
+.split-title .ct { color: var(--muted); font-weight: 600; margin-left: 2px; font-size: 11.5px; }
+.split-meta {
+  display: grid; grid-template-columns: 1fr; gap: 2px;
+  font-size: 11px; color: var(--muted); letter-spacing: -0.01em; margin-top: 2px;
+}
+.split-meta .row { display: flex; gap: 6px; }
+.split-meta .row b {
+  font-family: var(--font-num); font-weight: 700; color: var(--ink-2); letter-spacing: -0.01em;
+}
+.split-total {
+  font-family: var(--font-num); font-size: 19px; font-weight: 800;
+  color: var(--ink); letter-spacing: -0.03em; margin-top: 6px; line-height: 1;
+}
+.split-total.zero { color: var(--muted); }
+.split-total .u {
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  color: var(--ink-2); margin-left: 1px;
+}
+
+/* trend */
+.bk-trend {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 12px 14px 6px;
+}
+.trend-ctl {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 8px; margin-bottom: 4px;
+}
+.trend-pills {
+  display: inline-flex; background: var(--surface-2);
+  border-radius: var(--r-md); padding: 2px; gap: 1px;
+}
+.trend-pills button {
+  background: transparent; border: 0; padding: 4px 10px;
+  font-family: var(--font); font-size: 11px; font-weight: 600;
+  color: var(--muted); cursor: pointer;
+  border-radius: calc(var(--r-md) - 3px); transition: all .15s; letter-spacing: -0.01em;
+}
+.trend-pills button.active {
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.06);
+}
+.trend-range {
+  font-family: var(--font-num); font-size: 11px; color: var(--muted); letter-spacing: -0.01em;
+}
+.trend-legend {
+  display: flex; gap: 12px; padding: 4px 0 2px;
+  font-size: 11px; color: var(--muted); font-weight: 600;
+}
+.trend-legend .it { display: inline-flex; align-items: center; gap: 5px; }
+.trend-legend .sw { width: 8px; height: 8px; border-radius: 2px; }
+.trend-legend .sw.a { background: var(--accent); }
+.trend-legend .sw.m { background: var(--moss); }
+.trend-svg { width: 100%; height: 200px; display: block; }
+.trend-axis-label {
+  font-family: 'Inter', Pretendard, sans-serif;
+  font-size: 9px; fill: var(--muted-2); font-weight: 600;
+}
+.trend-grid { stroke: var(--line-soft); stroke-width: 1; stroke-dasharray: 2 4; }
+.trend-area-a { fill: var(--accent); opacity: 0.14; }
+.trend-line-a { stroke: var(--accent); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.trend-area-m { fill: var(--moss); opacity: 0.12; }
+.trend-line-m { stroke: var(--moss); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* AR/AP match table re-use inside stream */
+.stream .c-armatch { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; }
+.stream .c-armatch > header { padding: 0 0 10px; border-bottom: 1px solid var(--line-soft); margin-bottom: 8px; }
+
+/* zero small */
+.bk-one-zero {
+  font-family: var(--font-num); font-size: 22px; font-weight: 800;
+  color: var(--muted); letter-spacing: -0.03em;
+}
+
+/* ---- stream-specific tweaks for dashboard.html cards ---- */
+.stream .card {
+  /* ensure cards render inline in the narrow stream */
+  padding: 16px 18px;
+}
+.stream .kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.stream .kpi-grid .card.kpi {
+  grid-column: auto;
+  width: auto;
+  padding: 14px 16px;
+  min-height: unset;
+}
+.stream .kpi-grid .card.kpi .card-header { margin-bottom: 8px; }
+.stream .kpi-grid .card.kpi .card-title { font-size: 12px; letter-spacing: -0.01em; }
+.stream .kpi-grid .card.kpi .kpi-count {
+  margin-left: 4px; font-size: 10.5px; padding: 1px 6px;
+}
+.stream .kpi-grid .card.kpi .value {
+  font-size: 22px; letter-spacing: -0.03em; line-height: 1.05;
+}
+.stream .kpi-grid .card.kpi .value .won { font-size: 12px; margin-left: 2px; }
+.stream .kpi-grid .card.kpi .k-icon { width: 26px; height: 26px; }
+.stream .kpi-grid .card.kpi .k-icon svg { width: 13px; height: 13px; }
+.stream .kpi-grid .card.kpi .trend {
+  margin-top: 8px !important; font-size: 11px; padding: 3px 7px;
+}
+
+/* 매입매출현황 stacked in stream */
+.stream .c-cashflow { padding: 14px 16px; min-height: unset; }
+.stream .c-cashflow .cf-layout {
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+.stream .c-cashflow .cf-hero {
+  padding: 12px 14px;
+}
+.stream .c-cashflow .cf-hero-value { font-size: 26px; }
+.stream .c-cashflow .cf-spark { height: 34px; margin-top: 10px; }
+.stream .c-cashflow .cf-hero-grid { margin-top: 10px; padding-top: 10px; }
+.stream .c-cashflow .cf-chart-wrap { padding-top: 0; }
+.stream .c-cashflow .cf-chart { min-height: 220px; }
+.stream .c-cashflow .cf-head { gap: 12px; align-items: center; }
+.stream .c-cashflow .cf-legend { padding-left: 0; }
+.stream .c-cashflow .cf-legend-row { font-size: 11.5px; }
+.stream .c-cashflow .cf-tabs { padding: 2px; }
+.stream .c-cashflow .cf-tab { padding: 4px 10px; font-size: 11.5px; }
+.stream .c-cashflow .cf-sort { width: 28px; height: 28px; }
+.stream .c-cashflow .cf-head-left .card-title { font-size: 14px; }
+
+/* 계좌 잔액 바 (c-accbar) narrow */
+.stream .c-accbar {
+  padding: 14px 16px;
+}
+
+/* 정책 알림 narrow */
+.stream .c-policy { padding: 14px 16px; }
+
+/* AR/AP summary split */
+.arap-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.arap-sum-card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.arap-sum-card .ttl {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em;
+}
+.arap-sum-card .ttl .cnt {
+  font-family: var(--font-num); font-size: 11px; font-weight: 700;
+  color: var(--muted); background: var(--surface-2); padding: 2px 8px; border-radius: 999px;
+}
+.arap-sum-card .val {
+  font-family: var(--font-num); font-size: 20px; font-weight: 800;
+  letter-spacing: -0.03em; color: var(--ink); line-height: 1.05; margin-top: 2px;
+}
+.arap-sum-card .val.in { color: var(--moss); }
+.arap-sum-card .val.out { color: var(--rose, oklch(0.6 0.19 28)); }
+.arap-sum-card .val .u {
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  color: var(--ink-2); margin-left: 1px;
+}
+.arap-sum-card .matched-bar {
+  margin-top: 8px;
+  height: 5px; border-radius: 999px;
+  background: var(--bg-2); overflow: hidden;
+}
+.arap-sum-card .matched-bar span {
+  display: block; height: 100%; background: var(--moss);
+  border-radius: 999px;
+}
+.arap-sum-card .m-meta {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px; color: var(--muted); font-weight: 600; margin-top: 4px;
+}
+
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <!-- ======= SIDE NAV ======= -->
+  <aside class="sidenav">
+    <div class="brand">
+      <div class="brand-mark">B</div>
+      <div>
+        <div class="brand-name">BizFinOne</div>
+        <div class="brand-sub">소상공인 재무 매니저</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Workspace</div>
+    <a class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
+      대시보드
+    </a>
+    <a class="nav-item" href="11-finance.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"></path><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path></svg>
+      금융조회
+    </a>
+    <a class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+      증빙조회 <span class="count">3</span>
+    </a>
+    <a class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+      카드조회
+    </a>
+    <a class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 6 12 3 19 6"></polyline><line x1="4" y1="10" x2="4" y2="21"></line><line x1="20" y1="10" x2="20" y2="21"></line></svg>
+      대출·정책 <span class="count">NEW</span>
+    </a>
+
+    <div class="nav-section">Analytics</div>
+    <a class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M7 14l4-4 4 4 5-5"></path></svg>
+      리포트
+    </a>
+    <a class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 1 9 9h-9z"></path></svg>
+      세무신고
+    </a>
+
+
+    <div class="nav-spacer"></div>
+    <div class="company-card">
+      <div class="company-avatar">홍</div>
+      <div>
+        <div class="company-name">홍길동상사</div>
+        <div class="company-role">개인사업자</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======= MAIN ======= -->
+  <main class="main stream-main">
+    <div class="stream" id="stream">
+
+      <!-- ======= STREAM HEADER ======= -->
+      <div class="sh">
+        <button class="sh-month" type="button" id="shMonthBtn" aria-haspopup="true" aria-expanded="false">
+          <span id="shMonthLabel">2026년 04월</span>
+          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="sh-pop" id="shMonthPop" hidden="">
+          <div class="sh-pop-year">
+            <button type="button" data-yr-step="-1" aria-label="이전 연도">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <span id="shPopYear">2026</span>년
+            <button type="button" data-yr-step="1" aria-label="다음 연도">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+          <div class="sh-pop-grid" id="shPopGrid">
+            <button type="button" data-m="1">1월</button>
+            <button type="button" data-m="2">2월</button>
+            <button type="button" data-m="3">3월</button>
+            <button type="button" data-m="4" class="active">4월</button>
+            <button type="button" data-m="5">5월</button>
+            <button type="button" data-m="6">6월</button>
+            <button type="button" data-m="7">7월</button>
+            <button type="button" data-m="8">8월</button>
+            <button type="button" data-m="9">9월</button>
+            <button type="button" data-m="10">10월</button>
+            <button type="button" data-m="11">11월</button>
+            <button type="button" data-m="12">12월</button>
+          </div>
+        </div>
+        <div class="sh-right">
+          </div>
+      </div>
+
+      <!-- ======= AGGREGATOR ======= -->
+      <div class="aggr">
+        <div class="aggr-left">
+          <div class="aggr-logos">
+            <span class="lg b1">국민</span>
+            <span class="lg b2">하나</span>
+            <span class="lg b3">신한</span>
+            <span class="lg b4">우리</span>
+          </div>
+          <div class="aggr-text">
+            <div class="t">계좌·신용카드·거래처 내역</div>
+            <div class="s">한 번에 연결하고 실시간으로 관리해요</div>
+          </div>
+        </div>
+        <button class="aggr-add" type="button" aria-label="추가 연결">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <div class="aggr-right">
+          <div class="i"><div class="lbl">이번달 매출</div><div class="val">42,580,000원</div></div>
+          <div class="i"><div class="lbl">이번달 매입</div><div class="val">18,230,000원</div></div>
+        </div>
+      </div>
+
+      <!-- ======= 계좌 잔액 ======= -->
+      <div class="acx">
+        <div class="acx-head">
+          <div class="acx-title-wrap">
+            <div class="acx-title">
+              <span class="acx-dot"></span>
+              내 계좌·카드
+            </div>
+            <div class="acx-sub">3개 금융사 · 마지막 업데이트 2분 전</div>
+          </div>
+          <button class="acx-refresh" type="button" title="새로고침" aria-label="새로고침">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"></path><polyline points="21 3 21 8 16 8"></polyline><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"></path><polyline points="3 21 3 16 8 16"></polyline></svg>
+          </button>
+        </div>
+
+        <div class="acx-segs" role="tablist">
+          <button type="button" class="acx-seg active" data-seg="bank">
+            <span class="lbl">입출금</span>
+            <span class="cnt">3</span>
+          </button>
+          <button type="button" class="acx-seg" data-seg="loan">
+            <span class="lbl">대출</span>
+            <span class="cnt">1</span>
+          </button>
+          <button type="button" class="acx-seg" data-seg="card">
+            <span class="lbl">신용카드</span>
+            <span class="cnt">2</span>
+          </button>
+        </div>
+
+        <div class="acx-hero">
+          <div class="acx-hero-lbl">입출금식예금 총 잔액</div>
+          <div class="acx-hero-val">7,656,553<span class="u">원</span></div>
+          <div class="acx-hero-meta">
+            <span class="acx-trend up">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+              지난주 대비 +342,000원
+            </span>
+          </div>
+        </div>
+
+        <div class="acx-list">
+          <div class="acx-item primary">
+            <span class="acx-logo">
+              <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#FFFFFF"></rect><text x="16" y="21" text-anchor="middle" font-family="Inter" font-weight="800" font-size="11" fill="#0046AA" letter-spacing="-0.5">IBK</text></svg>
+            </span>
+            <div class="acx-info">
+              <div class="acx-line1">
+                <span class="acx-name">기업은행</span>
+                <span class="acx-badge">주계좌</span>
+              </div>
+              <div class="acx-acc">020-127894-01-015</div>
+              <div class="acx-share-bar"><span style="width: 18.4%;"></span></div>
+            </div>
+            <div class="acx-right">
+              <div class="acx-bal">1,410,571<span class="u">원</span></div>
+              <div class="acx-share">18.4%</div>
+            </div>
+          </div>
+
+          <div class="acx-item">
+            <span class="acx-logo">
+              <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#FFFFFF"></rect><g transform="translate(16 16)"><path d="M -7 -6 L 0 2 L 7 -6 L 5 -6 L 0 0 L -5 -6 Z" fill="#00A04A"></path><circle cx="0" cy="3" r="6" fill="none" stroke="#FEC53D" stroke-width="2.4"></circle></g></svg>
+            </span>
+            <div class="acx-info">
+              <div class="acx-line1"><span class="acx-name">농협은행</span></div>
+              <div class="acx-acc">351-0128-4792-18</div>
+              <div class="acx-share-bar"><span style="width: 79.9%;"></span></div>
+            </div>
+            <div class="acx-right">
+              <div class="acx-bal">6,117,529<span class="u">원</span></div>
+              <div class="acx-share">79.9%</div>
+            </div>
+          </div>
+
+          <div class="acx-item">
+            <span class="acx-logo">
+              <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#FFBC00"></rect><text x="16" y="21" text-anchor="middle" font-family="Inter" font-weight="800" font-size="12" fill="#60584C" letter-spacing="-0.4">KB</text></svg>
+            </span>
+            <div class="acx-info">
+              <div class="acx-line1"><span class="acx-name">국민은행</span></div>
+              <div class="acx-acc">847-20-0143-521</div>
+              <div class="acx-share-bar"><span style="width: 1.7%;"></span></div>
+            </div>
+            <div class="acx-right">
+              <div class="acx-bal">128,453<span class="u">원</span></div>
+              <div class="acx-share">1.7%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="acx-foot">
+          <button type="button" class="acx-add">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            계좌 연결
+          </button>
+          <button type="button" class="acx-all">
+            전체 내역 보기
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ======= 거래내역 매칭 현황 ======= -->
+      <section class="wm-match" aria-label="거래내역 매칭 현황">
+        <div class="wm-match__head">
+          <h2 class="wm-match__title">
+            <span class="acx-dot" aria-hidden="true"></span>
+            거래내역 매칭 현황
+          </h2>
+          <button type="button" class="wm-toggle" id="wmToggle" aria-expanded="false" aria-controls="wmCollapse" aria-label="내역 펼치기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+        </div>
+
+        <div class="wm-body">
+          <!-- 월별 요약 -->
+          <div class="wm-summary">
+            <button type="button" class="wm-summary__box" data-wm-filter="done" aria-label="완료 3건 보기">
+              <span class="wm-summary__label"><span class="d"></span>완료</span>
+              <span class="wm-summary__value">3<span class="u">건</span></span>
+              <span class="wm-summary__sub">세금계산서·카드매출 자동 매칭</span>
+            </button>
+            <button type="button" class="wm-summary__box wm-summary__box--alert" data-wm-filter="incomplete" aria-label="대기 3건 보기">
+              <span class="wm-summary__label"><span class="d"></span>대기</span>
+              <span class="wm-summary__value">3<span class="u">건</span></span>
+              <span class="wm-summary__sub">증빙 누락 · 빠른 확인 필요</span>
+            </button>
+          </div>
+
+          <!-- 매칭 리스트 (collapsible) -->
+          <div class="wm-collapse" id="wmCollapse" hidden>
+          <ul class="wm-list" id="wmList">
+            <li class="wm-item wm-item--incomplete">
+              <div class="wm-item__parent">
+                <span class="wm-badge wm-badge--incomplete">대기</span>
+                <div class="wm-item__main">
+                  <div class="wm-item__title">MOBILPAY 입금</div>
+                  <div class="wm-item__meta">
+                    <span class="wm-io wm-io--in">입금</span>
+                    <span class="date">2026-04-18</span>
+                    <span class="sep"></span>
+                    <span>기업은행</span>
+                  </div>
+                </div>
+                <div class="wm-item__amount wm-item__amount--in">+1,250,000<span class="u">원</span></div>
+              </div>
+              <div class="wm-item__detail wm-item__detail--empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                증빙 내역이 없습니다.
+              </div>
+            </li>
+
+            <li class="wm-item wm-item--done">
+              <div class="wm-item__parent">
+                <span class="wm-badge wm-badge--done">완료</span>
+                <div class="wm-item__main">
+                  <div class="wm-item__title">(주)에이스물류</div>
+                  <div class="wm-item__meta">
+                    <span class="wm-io wm-io--in">입금</span>
+                    <span class="date">2026-04-17</span>
+                    <span class="sep"></span>
+                    <span>농협은행</span>
+                  </div>
+                </div>
+                <div class="wm-item__amount wm-item__amount--in">+4,180,000<span class="u">원</span></div>
+              </div>
+              <div class="wm-item__detail">
+                <span class="wm-item__detail-date">2026-04-17</span>
+                <span class="wm-item__detail-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg>
+                  매출세금계산서
+                </span>
+                <span class="wm-item__detail-doc">에이스물류 102-44-66578</span>
+                <span class="wm-item__detail-ext">4,180,000원</span>
+              </div>
+            </li>
+
+            <li class="wm-item wm-item--incomplete">
+              <div class="wm-item__parent">
+                <span class="wm-badge wm-badge--incomplete">대기</span>
+                <div class="wm-item__main">
+                  <div class="wm-item__title">(주)코스모통신</div>
+                  <div class="wm-item__meta">
+                    <span class="wm-io wm-io--out">출금</span>
+                    <span class="date">2026-04-16</span>
+                    <span class="sep"></span>
+                    <span>국민은행</span>
+                  </div>
+                </div>
+                <div class="wm-item__amount wm-item__amount--out">−580,000<span class="u">원</span></div>
+              </div>
+              <div class="wm-item__detail wm-item__detail--empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                증빙 내역이 없습니다.
+              </div>
+            </li>
+
+            <li class="wm-item wm-item--done">
+              <div class="wm-item__parent">
+                <span class="wm-badge wm-badge--done">완료</span>
+                <div class="wm-item__main">
+                  <div class="wm-item__title">한국전력공사</div>
+                  <div class="wm-item__meta">
+                    <span class="wm-io wm-io--out">출금</span>
+                    <span class="date">2026-04-15</span>
+                    <span class="sep"></span>
+                    <span>기업은행</span>
+                  </div>
+                </div>
+                <div class="wm-item__amount wm-item__amount--out">−182,350<span class="u">원</span></div>
+              </div>
+              <div class="wm-item__detail">
+                <span class="wm-item__detail-date">2026-04-15</span>
+                <span class="wm-item__detail-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg>
+                  전자계산서
+                </span>
+                <span class="wm-item__detail-doc">한국전력공사 999-88-44444</span>
+                <span class="wm-item__detail-ext">182,350원</span>
+              </div>
+            </li>
+
+            <li class="wm-item wm-item--incomplete">
+              <div class="wm-item__parent">
+                <span class="wm-badge wm-badge--incomplete">대기</span>
+                <div class="wm-item__main">
+                  <div class="wm-item__title">사업자통신비 자동이체</div>
+                  <div class="wm-item__meta">
+                    <span class="wm-io wm-io--out">출금</span>
+                    <span class="date">2026-04-13</span>
+                    <span class="sep"></span>
+                    <span>국민은행</span>
+                  </div>
+                </div>
+                <div class="wm-item__amount wm-item__amount--out">−312,000<span class="u">원</span></div>
+              </div>
+              <div class="wm-item__detail wm-item__detail--empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                증빙 내역이 없습니다.
+              </div>
+            </li>
+
+            <li class="wm-item wm-item--done">
+              <div class="wm-item__parent">
+                <span class="wm-badge wm-badge--done">완료</span>
+                <div class="wm-item__main">
+                  <div class="wm-item__title">(주)웅진식품</div>
+                  <div class="wm-item__meta">
+                    <span class="wm-io wm-io--in">입금</span>
+                    <span class="date">2026-04-12</span>
+                    <span class="sep"></span>
+                    <span>농협은행</span>
+                  </div>
+                </div>
+                <div class="wm-item__amount wm-item__amount--in">+2,850,000<span class="u">원</span></div>
+              </div>
+              <div class="wm-item__detail">
+                <span class="wm-item__detail-date">2026-04-12</span>
+                <span class="wm-item__detail-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="13" y2="17"></line></svg>
+                  매입세금계산서
+                </span>
+                <span class="wm-item__detail-doc">웅진 777-55-123456</span>
+                <span class="wm-item__detail-ext">2,850,000원</span>
+              </div>
+            </li>
+          </ul>
+          <div class="wm-foot">
+            <button type="button" class="wm-all">
+              전체 내역 보기
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+          </div><!-- /.wm-collapse -->
+        </div>
+      </section>
+
+      <!-- ======= KPI 2x2 ======= -->
+      <div class="kpi-grid">
+        <div class="card hoverable kpi">
+          <div class="card-header">
+            <span class="card-title">이번달 매출<span class="kpi-count">87건</span></span>
+            <div class="k-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M5 9l7-7 7 7"></path></svg>
+            </div>
+          </div>
+          <div class="value"><span class="num">42,580,000</span><span class="won">원</span></div>
+          <div class="trend up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            전월비 +12.4%
+          </div>
+        </div>
+
+        <div class="card hoverable kpi k-rose">
+          <div class="card-header">
+            <span class="card-title">이번달 매입<span class="kpi-count">64건</span></span>
+            <div class="k-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V2M5 15l7 7 7-7"></path></svg>
+            </div>
+          </div>
+          <div class="value"><span class="num">18,230,000</span><span class="won">원</span></div>
+          <div class="trend down">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            전월비 −3.1%
+          </div>
+        </div>
+
+        <div class="card hoverable kpi k-moss">
+          <div class="card-header">
+            <span class="card-title">이번달 미수<span class="kpi-count">128건</span></span>
+            <div class="k-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+            </div>
+          </div>
+          <div class="value"><span class="sign">+</span><span class="num">24,350,000</span><span class="won">원</span></div>
+          <div class="trend up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            전월비 +28.7%
+          </div>
+        </div>
+
+        <div class="card hoverable kpi k-amber">
+          <div class="card-header">
+            <span class="card-title">이번달 미지급<span class="kpi-count">23건</span></span>
+            <div class="k-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+            </div>
+          </div>
+          <div class="value"><span class="num">7,000,000</span><span class="won">원</span></div>
+          <div class="trend flat">미수 3 · 미지급 2</div>
+        </div>
+      </div>
+
+      <!-- ======= 매입매출현황 ======= -->
+      <div class="cfx" id="cfxCard">
+        <div class="cfx-head">
+          <div class="cfx-title">
+            <span class="acx-dot" aria-hidden="true"></span>
+            매입매출현황
+          </div>
+          <div class="cfx-legend">
+            <span class="lg"><span class="sw rev"></span>매출</span>
+            <span class="lg"><span class="sw exp"></span>매입</span>
+            <span class="lg"><span class="sw net"></span>순이익</span>
+          </div>
+        </div>
+
+        <div class="cfx-summary">
+          <div class="cfx-sum">
+            <div class="cfx-sum-lbl"><span class="cfx-dot rev"></span>6개월 매출</div>
+            <div class="cfx-sum-val">250,780,000<span class="u">원</span></div>
+          </div>
+          <div class="cfx-sum">
+            <div class="cfx-sum-lbl"><span class="cfx-dot exp"></span>6개월 매입</div>
+            <div class="cfx-sum-val">113,930,000<span class="u">원</span></div>
+          </div>
+          <div class="cfx-sum">
+            <div class="cfx-sum-lbl">6개월 순이익</div>
+            <div class="cfx-sum-val acc">
+              +136,850,000<span class="u">원</span>
+              <span class="cfx-pill up">▲ 28.7%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cfx-chart-wrap">
+          <svg class="cfx-chart" id="cfxChart" viewBox="0 0 620 230" preserveAspectRatio="none" aria-label="월별 매출·매입·순이익 추이">
+            <defs>
+              <linearGradient id="cfxNetGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--ink)" stop-opacity="0.14"></stop>
+                <stop offset="100%" stop-color="var(--ink)" stop-opacity="0"></stop>
+              </linearGradient>
+            </defs>
+
+            <!-- Y-axis grid lines -->
+            <line class="cfx-grid-line" x1="44" y1="20" x2="610" y2="20"></line>
+            <line class="cfx-grid-line" x1="44" y1="70" x2="610" y2="70"></line>
+            <line class="cfx-grid-line" x1="44" y1="120" x2="610" y2="120"></line>
+            <line class="cfx-grid-line" x1="44" y1="170" x2="610" y2="170"></line>
+            <line class="cfx-grid-line" x1="44" y1="190" x2="610" y2="190" style="stroke: var(--ink-3, var(--muted)); stroke-dasharray: 0; opacity: .3;"></line>
+
+            <!-- Y-axis labels (max 60M) -->
+            <text class="cfx-axis-label" x="40" y="23" text-anchor="end">60M</text>
+            <text class="cfx-axis-label" x="40" y="73" text-anchor="end">40M</text>
+            <text class="cfx-axis-label" x="40" y="123" text-anchor="end">20M</text>
+            <text class="cfx-axis-label" x="40" y="173" text-anchor="end">0</text>
+
+            <!-- Bar groups (populated by JS) -->
+            <g id="cfxBars"></g>
+
+            <!-- Net profit area + line -->
+            <path class="cfx-line-area" id="cfxLineArea" d=""></path>
+            <path class="cfx-line" id="cfxLine" d=""></path>
+
+            <!-- Net profit points -->
+            <g id="cfxPoints"></g>
+
+            <!-- X-axis month labels -->
+            <g id="cfxMonthLabels"></g>
+
+            <!-- Vertical hover line -->
+            <line class="cfx-vline" id="cfxVline" x1="0" y1="20" x2="0" y2="190" style="display:none;"></line>
+
+            <!-- Hover zones (transparent rects, full column) -->
+            <g id="cfxHoverZones"></g>
+          </svg>
+
+          <div class="cfx-tooltip" id="cfxTooltip" role="tooltip" aria-hidden="true">
+            <div class="t-month"></div>
+            <div class="t-row"><span class="label"><span class="dot rev"></span>매출</span><b class="rev-val"></b></div>
+            <div class="t-row"><span class="label"><span class="dot exp"></span>매입</span><b class="exp-val"></b></div>
+            <div class="t-row net"><span class="label">순이익</span><b class="net-val"></b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======= 정책자금 신청하기 (carousel) ======= -->
+      <div class="polf" id="polfCard">
+        <div class="polf-head">
+          <div class="polf-title-block">
+            <div class="polf-title">정책자금 신청하기</div>
+            <div class="polf-sub">소상공인시장진흥공단에서 지원하는 정책자금을 확인하세요</div>
+          </div>
+          <div class="polf-ctl">
+            <button type="button" class="polf-ctl-btn" data-polf="prev" aria-label="이전">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <button type="button" class="polf-ctl-btn" data-polf="toggle" aria-label="재생/일시정지">
+              <svg class="icon-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="5" x2="9" y2="19"></line><line x1="15" y1="5" x2="15" y2="19"></line></svg>
+              <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="7 4 20 12 7 20"></polygon></svg>
+            </button>
+            <button type="button" class="polf-ctl-btn" data-polf="next" aria-label="다음">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="polf-viewport">
+          <div class="polf-track" id="polfTrack">
+            <div class="polf-slide">
+              <div class="polf-chips">
+                <span class="polf-chip type type-agency">대리대출</span>
+                <span class="polf-chip state state-open">접수중</span>
+              </div>
+              <div class="polf-sname">소공인특화자금</div>
+              <div class="polf-sdate">접수기간 : <b>2026-01-05</b> ~ 자금소진시까지</div>
+              <button type="button" class="polf-btn">신청하기</button>
+            </div>
+
+            <div class="polf-slide">
+              <div class="polf-chips">
+                <span class="polf-chip type type-direct">직접대출</span>
+                <span class="polf-chip state state-open">접수중</span>
+              </div>
+              <div class="polf-sname">상생성장지원자금</div>
+              <div class="polf-sdate">접수기간 : <b>2026-01-12</b> ~ 자금소진시까지</div>
+              <button type="button" class="polf-btn">신청하기</button>
+            </div>
+
+            <div class="polf-slide">
+              <div class="polf-chips">
+                <span class="polf-chip type type-direct">직접대출</span>
+                <span class="polf-chip state state-open">접수중</span>
+              </div>
+              <div class="polf-sname">민간투자연계형매칭융자</div>
+              <div class="polf-sdate">접수기간 : <b>2026-01-12</b> ~ 자금소진시까지</div>
+              <button type="button" class="polf-btn">신청하기</button>
+            </div>
+
+            <div class="polf-slide">
+              <div class="polf-chips">
+                <span class="polf-chip type type-agency">대리대출</span>
+                <span class="polf-chip state state-open">접수중</span>
+              </div>
+              <div class="polf-sname">소상공인 특별경영안정자금</div>
+              <div class="polf-sdate">접수기간 : <b>2026-02-03</b> ~ 자금소진시까지</div>
+              <button type="button" class="polf-btn">신청하기</button>
+            </div>
+
+            <div class="polf-slide">
+              <div class="polf-chips">
+                <span class="polf-chip type type-direct">직접대출</span>
+                <span class="polf-chip state state-soon">접수임박</span>
+              </div>
+              <div class="polf-sname">청년 사업자 이자지원</div>
+              <div class="polf-sdate">접수기간 : <b>2026-02-15</b> ~ <b>2026-03-31</b></div>
+              <button type="button" class="polf-btn">신청하기</button>
+            </div>
+
+            <div class="polf-slide">
+              <div class="polf-chips">
+                <span class="polf-chip type type-agency">대리대출</span>
+                <span class="polf-chip state state-open">접수중</span>
+              </div>
+              <div class="polf-sname">여성기업 성장촉진자금</div>
+              <div class="polf-sdate">접수기간 : <b>2026-03-01</b> ~ 자금소진시까지</div>
+              <button type="button" class="polf-btn">신청하기</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="polf-dots" id="polfDots"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ======= TWEAKS PANEL ======= -->
+<div class="tweaks-panel" id="tweaksPanel">
+  <div class="tweaks-head">
+    <h3>Tweaks</h3>
+    <button class="tweaks-close" id="closeTweaks">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <div class="tweak-row">
+    <span class="label">테마</span>
+    <div class="tweak-group" data-tweak="theme">
+      <button data-val="light">Light</button>
+      <button data-val="dark">Dark</button>
+    </div>
+  </div>
+
+  <div class="tweak-row">
+    <span class="label">액센트</span>
+    <div class="tweak-swatches" data-tweak="accent">
+      <button data-val="terracotta" style="background: #D97757;" title="테라코타"></button>
+      <button data-val="moss" style="background: #5B8770;" title="모스"></button>
+      <button data-val="indigo" style="background: #6B63C7;" title="인디고"></button>
+      <button data-val="amber" style="background: #C89B3C;" title="앰버"></button>
+      <button data-val="rose" style="background: #B85464;" title="로즈"></button>
+    </div>
+  </div>
+
+  <div class="tweak-row">
+    <span class="label">밀도</span>
+    <div class="tweak-group" data-tweak="density">
+      <button data-val="compact">Compact</button>
+      <button data-val="comfortable">Comfort</button>
+    </div>
+  </div>
+
+  <div class="tweak-row">
+    <span class="label">Greeting</span>
+    <div class="switch" data-tweak="showGreeting" id="greetSwitch"></div>
+  </div>
+
+  <div class="tweak-row">
+    <span class="label">폰트</span>
+    <div class="tweak-group" data-tweak="font">
+      <button data-val="pretendard">Prtd</button>
+      <button data-val="paperlogy">Ppr</button>
+      <button data-val="plex">Plex</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== STATE ======
+let tweaks = {...TWEAK_DEFAULTS};
+try {
+  const saved = localStorage.getItem('bizfin-tweaks');
+  if (saved) tweaks = {...tweaks, ...JSON.parse(saved)};
+} catch(e) {}
+
+function applyTweaks() {
+  const root = document.documentElement;
+  root.setAttribute('data-theme', tweaks.theme);
+  root.setAttribute('data-accent', tweaks.accent);
+  root.setAttribute('data-density', tweaks.density);
+  root.setAttribute('data-font', tweaks.font);
+  const greetingEl = document.getElementById('greeting');
+  if (greetingEl) greetingEl.style.display = tweaks.showGreeting ? '' : 'none';
+  // Update tweak UI
+  document.querySelectorAll('[data-tweak]').forEach(el => {
+    const key = el.dataset.tweak;
+    if (key === 'showGreeting') {
+      el.classList.toggle('on', !!tweaks[key]);
+      return;
+    }
+    el.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', b.dataset.val === tweaks[key]);
+    });
+  });
+  try { localStorage.setItem('bizfin-tweaks', JSON.stringify(tweaks)); } catch(e) {}
+  // Notify host
+  try { window.parent.postMessage({type:'__edit_mode_set_keys', edits: tweaks}, '*'); } catch(e) {}
+}
+
+// Wire tweaks
+document.querySelectorAll('[data-tweak]').forEach(el => {
+  const key = el.dataset.tweak;
+  if (key === 'showGreeting') {
+    el.addEventListener('click', () => {
+      tweaks[key] = !tweaks[key];
+      applyTweaks();
+    });
+    return;
+  }
+  el.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      tweaks[key] = b.dataset.val;
+      applyTweaks();
+    });
+  });
+});
+
+// Tweaks panel open/close + host protocol
+const panel = document.getElementById('tweaksPanel');
+const openBtn = document.getElementById('openTweaks');
+if (openBtn) openBtn.addEventListener('click', () => panel.classList.toggle('open'));
+document.getElementById('closeTweaks').addEventListener('click', () => panel.classList.remove('open'));
+
+window.addEventListener('message', (e) => {
+  if (!e.data || !e.data.type) return;
+  if (e.data.type === '__activate_edit_mode') panel.classList.add('open');
+  if (e.data.type === '__deactivate_edit_mode') panel.classList.remove('open');
+});
+try { window.parent.postMessage({type:'__edit_mode_available'}, '*'); } catch(e) {}
+
+applyTweaks();
+
+// ====== Count-up animation ======
+function animateCount(el) {
+  const target = +el.dataset.count;
+  const dur = 1100;
+  const start = performance.now();
+  function step(t) {
+    const p = Math.min(1, (t - start) / dur);
+    const e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.floor(target * e).toLocaleString('ko-KR');
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = target.toLocaleString('ko-KR');
+  }
+  requestAnimationFrame(step);
+}
+document.querySelectorAll('[data-count]').forEach((el, i) => {
+  setTimeout(() => animateCount(el), 120 + i * 60);
+});
+
+// ====== Todo toggle ======
+function toggleTodo(el) {
+  el.classList.toggle('done');
+  el.querySelector('.todo-check').classList.toggle('done');
+}
+
+// ====== Cashflow chart: bars + dots + hover ======
+(function(){
+  const svg = document.getElementById('cfsvg');
+  if (!svg) return; // chart removed — skip legacy init
+  const expBars = document.getElementById('exp-bars');
+  const revBars = document.getElementById('rev-bars');
+  const data = [
+    {x: 90,  r: 115, m: 138, rv: 28.4, mv: 12.1, label: '11월'},
+    {x: 208, r: 88,  m: 121, rv: 36.7, mv: 17.8, label: '12월'},
+    {x: 326, r: 62,  m: 98,  rv: 48.2, mv: 21.4, label: '1월'},
+    {x: 444, r: 54,  m: 90,  rv: 52.8, mv: 24.6, label: '2월'},
+    {x: 562, r: 42,  m: 76,  rv: 42.1, mv: 19.8, label: '3월'},
+    {x: 680, r: 30,  m: 65,  rv: 42.58, mv: 18.23, label: '4월'},
+  ];
+  // Rev bars (accent, taller)
+  data.forEach((d, i) => {
+    const bw = 20;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', d.x - bw - 2);
+    rect.setAttribute('y', d.r);
+    rect.setAttribute('width', bw);
+    rect.setAttribute('height', 165 - d.r);
+    rect.setAttribute('rx', 5);
+    rect.setAttribute('fill', i === data.length - 1 ? 'var(--accent)' : 'var(--accent)');
+    rect.setAttribute('opacity', i === data.length - 1 ? '1' : '0.88');
+    rect.setAttribute('class', 'chart-bar');
+    rect.style.animationDelay = (0.1 + i*0.08) + 's';
+    rect.style.transformOrigin = `${d.x} 165px`;
+    revBars.appendChild(rect);
+  });
+  // Exp bars (moss, shorter, beside)
+  data.forEach((d, i) => {
+    const bw = 20;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', d.x + 2);
+    rect.setAttribute('y', d.m);
+    rect.setAttribute('width', bw);
+    rect.setAttribute('height', 165 - d.m);
+    rect.setAttribute('rx', 5);
+    rect.setAttribute('fill', 'var(--moss)');
+    rect.setAttribute('opacity', '0.55');
+    rect.setAttribute('class', 'chart-bar');
+    rect.style.animationDelay = (0.15 + i*0.08) + 's';
+    rect.style.transformOrigin = `${d.x} 165px`;
+    expBars.appendChild(rect);
+  });
+
+  // ===== Trend lines (on top of bars) =====
+  const revLine = document.getElementById('rev-line');
+  const expLine = document.getElementById('exp-line');
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  // Catmull-Rom → Cubic Bézier for smooth lines
+  function smoothPath(points) {
+    if (points.length < 2) return '';
+    let d = `M ${points[0][0]} ${points[0][1]}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i - 1] || points[i];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2] || p2;
+      const t = 0.18;
+      const c1x = p1[0] + (p2[0] - p0[0]) * t;
+      const c1y = p1[1] + (p2[1] - p0[1]) * t;
+      const c2x = p2[0] - (p3[0] - p1[0]) * t;
+      const c2y = p2[1] - (p3[1] - p1[1]) * t;
+      d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+    }
+    return d;
+  }
+
+  // Anchor line at top of each bar
+  const revPts = data.map(d => [d.x - 12, d.r]);
+  const expPts = data.map(d => [d.x + 12, d.m]);
+
+  function drawLine(container, pts, stroke, opacity, dashed) {
+    const path = document.createElementNS(SVGNS, 'path');
+    path.setAttribute('d', smoothPath(pts));
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', stroke);
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    if (dashed) path.setAttribute('stroke-dasharray', '3 4');
+    path.setAttribute('class', 'chart-trend');
+    path.style.setProperty('--trend-op', opacity);
+    container.appendChild(path);
+    // Dots
+    pts.forEach((p, i) => {
+      const c = document.createElementNS(SVGNS, 'circle');
+      c.setAttribute('cx', p[0]);
+      c.setAttribute('cy', p[1]);
+      c.setAttribute('r', i === pts.length - 1 ? 4 : 3);
+      c.setAttribute('fill', 'var(--surface, #fff)');
+      c.setAttribute('stroke', stroke);
+      c.setAttribute('stroke-width', '2');
+      c.setAttribute('class', 'chart-trend-dot');
+      c.style.animationDelay = (0.7 + i * 0.05) + 's';
+      c.style.opacity = opacity;
+      container.appendChild(c);
+    });
+  }
+
+  drawLine(revLine, revPts, 'var(--accent)', '1', false);
+  drawLine(expLine, expPts, 'var(--moss)', '0.85', true);
+
+  // Hover
+  const wrap = document.getElementById('cashflowChart');
+  const tooltip = document.getElementById('tooltip');
+  const hoverLine = document.getElementById('hoverLine');
+  wrap.addEventListener('mousemove', (e) => {
+    const rect = wrap.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const sx = (x / rect.width) * 720;
+    // find nearest
+    let nearest = data[0], nd = 1e9;
+    for (const d of data) {
+      const dd = Math.abs(d.x - sx);
+      if (dd < nd) { nd = dd; nearest = d; }
+    }
+    const relX = (nearest.x / 720) * rect.width;
+    const relY = (nearest.r / 200) * rect.height;
+    tooltip.style.opacity = 1;
+    tooltip.style.left = relX + 'px';
+    tooltip.style.top = (relY - 10) + 'px';
+    tooltip.innerHTML = `
+      <div class="label">${nearest.label}</div>
+      <div class="row"><span style="width:8px;height:8px;background:var(--accent);border-radius:2px;"></span><span>매출 <b>${nearest.rv}M</b></span></div>
+      <div class="row"><span style="width:8px;height:8px;background:var(--moss);border-radius:2px;opacity:.6;"></span><span>매입 <b>${nearest.mv}M</b></span></div>
+    `;
+    hoverLine.setAttribute('x1', nearest.x);
+    hoverLine.setAttribute('x2', nearest.x);
+    hoverLine.style.opacity = 0.4;
+  });
+  wrap.addEventListener('mouseleave', () => {
+    tooltip.style.opacity = 0;
+    hoverLine.style.opacity = 0;
+  });
+})();
+
+// ====== Heat grid ======
+(function(){
+  const grid = document.getElementById('heatGrid');
+  if (!grid) return;
+  const seed = [0,1,0,2,1,3,2, 1,0,1,2,3,2,4, 0,1,2,1,2,3,3, 1,2,3,4,3,4,2, 2,3,4,3,4,3,2, 1,2,2,3,4,4,3, 2,3,3,4,3,4,2, 1,1,2,3,2,3,2, 0,1,1,2,3,2,1, 1,2,2,3,3,4,3, 2,3,3,4,4,4,3, 3,3,4,4,3,4,2, 2,3,3,2,3,3,2, 1,2,2,3,3,4,3];
+  for (let i=0; i<seed.length; i++) {
+    const d = document.createElement('div');
+    d.className = 'heat-cell';
+    d.setAttribute('data-v', seed[i]);
+    d.style.animation = `fadeIn .4s ease-out ${0.3 + i*0.005}s both`;
+    grid.appendChild(d);
+  }
+})();
+
+// Period toggle
+document.querySelectorAll('.period-toggle button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.period-toggle button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  });
+});
+
+// Recent tabs
+document.querySelectorAll('.recent-tabs button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.recent-tabs button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  });
+});
+
+// AR/AP tabs
+document.querySelectorAll('.arap-tab').forEach(b => {
+  b.addEventListener('click', () => {
+    const key = b.getAttribute('data-arap-tab');
+    const card = b.closest('.c-arap');
+    card.querySelectorAll('.arap-tab').forEach(x => x.classList.toggle('active', x === b));
+    card.querySelectorAll('.arap-pane').forEach(p => {
+      p.classList.toggle('active', p.getAttribute('data-arap-pane') === key);
+    });
+  });
+});
+
+// AR/AP month nav
+(function(){
+  let year = 2026, month = 4;
+  const label = document.querySelector('#arapMonthLabel .arap-month-text');
+  if (!label) return;
+  const render = () => { label.textContent = `${year}년 ${month}월`; };
+  document.querySelectorAll('[data-arap-month]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dir = btn.getAttribute('data-arap-month') === 'next' ? 1 : -1;
+      month += dir;
+      if (month > 12) { month = 1; year++; }
+      else if (month < 1) { month = 12; year--; }
+      render();
+    });
+  });
+})();
+
+// ====== 매입매출현황 vertical bar + line chart ======
+(function(){
+  const svg = document.getElementById('cfxChart');
+  if (!svg) return;
+  const barsG = document.getElementById('cfxBars');
+  const pointsG = document.getElementById('cfxPoints');
+  const labelsG = document.getElementById('cfxMonthLabels');
+  const hoverG = document.getElementById('cfxHoverZones');
+  const linePath = document.getElementById('cfxLine');
+  const lineArea = document.getElementById('cfxLineArea');
+  const vline = document.getElementById('cfxVline');
+  const tooltip = document.getElementById('cfxTooltip');
+  const wrap = svg.parentElement;
+
+  // data: values in millions
+  const data = [
+    { m: '11월', rev: 28.4, exp: 12.1, net: 16.3, current: false },
+    { m: '12월', rev: 36.7, exp: 17.8, net: 18.9, current: false },
+    { m: '1월',  rev: 48.2, exp: 21.4, net: 26.8, current: false },
+    { m: '2월',  rev: 52.8, exp: 24.6, net: 28.2, current: false },
+    { m: '3월',  rev: 42.1, exp: 19.8, net: 22.3, current: false },
+    { m: '4월',  rev: 42.58, exp: 18.23, net: 24.35, current: true }
+  ];
+  const MAX = 60;
+  const chartTop = 20, chartBottom = 190;
+  const chartHeight = chartBottom - chartTop;
+  const leftPad = 44, rightPad = 10;
+  const chartLeft = leftPad, chartRight = 620 - rightPad;
+  const chartWidth = chartRight - chartLeft;
+  const groupW = chartWidth / data.length;
+  const barW = 22, barGap = 4;
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  const scaleY = (v) => chartBottom - (v / MAX) * chartHeight;
+
+  // bars
+  const linePts = [];
+  data.forEach((d, i) => {
+    const cx = chartLeft + groupW * i + groupW / 2;
+    const groupNode = document.createElementNS(svgNS, 'g');
+    groupNode.setAttribute('class', 'cfx-group');
+    groupNode.setAttribute('data-idx', i);
+
+    // 매출 bar (left)
+    const revH = (d.rev / MAX) * chartHeight;
+    const revY = chartBottom - revH;
+    const revRect = document.createElementNS(svgNS, 'rect');
+    revRect.setAttribute('class', 'cfx-vbar rev');
+    revRect.setAttribute('x', cx - barW - barGap / 2);
+    revRect.setAttribute('y', revY);
+    revRect.setAttribute('width', barW);
+    revRect.setAttribute('height', revH);
+    revRect.setAttribute('rx', 3);
+    groupNode.appendChild(revRect);
+
+    // 매입 bar (right)
+    const expH = (d.exp / MAX) * chartHeight;
+    const expY = chartBottom - expH;
+    const expRect = document.createElementNS(svgNS, 'rect');
+    expRect.setAttribute('class', 'cfx-vbar exp');
+    expRect.setAttribute('x', cx + barGap / 2);
+    expRect.setAttribute('y', expY);
+    expRect.setAttribute('width', barW);
+    expRect.setAttribute('height', expH);
+    expRect.setAttribute('rx', 3);
+    groupNode.appendChild(expRect);
+
+    barsG.appendChild(groupNode);
+
+    // line point coord
+    const py = scaleY(d.net);
+    linePts.push({ x: cx, y: py });
+
+    // x-axis month label
+    const lbl = document.createElementNS(svgNS, 'text');
+    lbl.setAttribute('class', 'cfx-month-label' + (d.current ? ' current' : ''));
+    lbl.setAttribute('x', cx);
+    lbl.setAttribute('y', 210);
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.textContent = d.m + (d.current ? ' · 이번달' : '');
+    labelsG.appendChild(lbl);
+
+    // hover zone (full column)
+    const zone = document.createElementNS(svgNS, 'rect');
+    zone.setAttribute('class', 'cfx-hover-zone');
+    zone.setAttribute('x', chartLeft + groupW * i);
+    zone.setAttribute('y', chartTop);
+    zone.setAttribute('width', groupW);
+    zone.setAttribute('height', chartBottom - chartTop);
+    zone.setAttribute('data-idx', i);
+    hoverG.appendChild(zone);
+  });
+
+  // line + area path
+  let lineD = '';
+  linePts.forEach((p, i) => {
+    lineD += (i === 0 ? 'M' : ' L') + p.x + ',' + p.y;
+  });
+  linePath.setAttribute('d', lineD);
+  const areaD = lineD + ' L' + linePts[linePts.length - 1].x + ',' + chartBottom + ' L' + linePts[0].x + ',' + chartBottom + ' Z';
+  lineArea.setAttribute('d', areaD);
+
+  // points
+  linePts.forEach((p, i) => {
+    const c = document.createElementNS(svgNS, 'circle');
+    c.setAttribute('class', 'cfx-pt');
+    c.setAttribute('cx', p.x);
+    c.setAttribute('cy', p.y);
+    c.setAttribute('r', 4);
+    c.setAttribute('data-idx', i);
+    pointsG.appendChild(c);
+  });
+
+  // tooltip handling
+  const fmt = (v) => {
+    // Display in full won: 42.58M -> 42,580,000원
+    const won = Math.round(v * 1000000);
+    return won.toLocaleString('ko-KR') + '원';
+  };
+
+  function showTooltip(i, evt) {
+    const d = data[i];
+    const cx = chartLeft + groupW * i + groupW / 2;
+    const yTop = Math.min(scaleY(d.rev), scaleY(d.net)) - 8;
+
+    // active state
+    document.querySelectorAll('#cfxBars .cfx-group').forEach(g => {
+      g.classList.remove('active');
+      g.classList.add('dim');
+    });
+    const cur = barsG.querySelector('.cfx-group[data-idx="' + i + '"]');
+    if (cur) { cur.classList.add('active'); cur.classList.remove('dim'); }
+    document.querySelectorAll('#cfxPoints .cfx-pt').forEach(p => {
+      p.classList.toggle('active', Number(p.getAttribute('data-idx')) === i);
+    });
+
+    // vline
+    vline.style.display = '';
+    vline.setAttribute('x1', cx);
+    vline.setAttribute('x2', cx);
+    vline.setAttribute('y1', chartTop);
+    vline.setAttribute('y2', chartBottom);
+    vline.style.opacity = 1;
+
+    // tooltip content
+    tooltip.querySelector('.t-month').textContent = d.m + (d.current ? ' · 이번달' : '');
+    tooltip.querySelector('.rev-val').textContent = fmt(d.rev);
+    tooltip.querySelector('.exp-val').textContent = fmt(d.exp);
+    tooltip.querySelector('.net-val').textContent = '+' + fmt(d.net);
+
+    // tooltip positioning (convert svg viewBox coords to pixels)
+    const rect = svg.getBoundingClientRect();
+    const scaleX = rect.width / 620;
+    const scaleYr = rect.height / 230;
+    const px = rect.left + cx * scaleX - wrap.getBoundingClientRect().left;
+    const py = rect.top + yTop * scaleYr - wrap.getBoundingClientRect().top;
+    tooltip.style.left = px + 'px';
+    tooltip.style.top = py + 'px';
+    tooltip.classList.add('show');
+    tooltip.setAttribute('aria-hidden', 'false');
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove('show');
+    tooltip.setAttribute('aria-hidden', 'true');
+    vline.style.opacity = 0;
+    document.querySelectorAll('#cfxBars .cfx-group').forEach(g => {
+      g.classList.remove('active');
+      g.classList.remove('dim');
+    });
+    document.querySelectorAll('#cfxPoints .cfx-pt').forEach(p => p.classList.remove('active'));
+  }
+
+  hoverG.querySelectorAll('.cfx-hover-zone').forEach(zone => {
+    zone.addEventListener('mouseenter', (e) => {
+      const i = Number(zone.getAttribute('data-idx'));
+      showTooltip(i, e);
+    });
+    zone.addEventListener('mousemove', (e) => {
+      const i = Number(zone.getAttribute('data-idx'));
+      showTooltip(i, e);
+    });
+  });
+  wrap.addEventListener('mouseleave', hideTooltip);
+})();
+
+// ====== 정책자금 신청하기 carousel ======
+(function(){
+  const card = document.getElementById('polfCard');
+  if (!card) return;
+  const track = document.getElementById('polfTrack');
+  const dotsWrap = document.getElementById('polfDots');
+  const prevBtn = card.querySelector('[data-polf="prev"]');
+  const nextBtn = card.querySelector('[data-polf="next"]');
+  const toggleBtn = card.querySelector('[data-polf="toggle"]');
+
+  const slides = Array.from(track.children);
+  const total = slides.length;
+  if (total === 0) return;
+
+  // Visible slides per view: 2 (desktop) / 1 (narrow mobile)
+  const perView = () => (window.innerWidth <= 560 ? 1 : 2);
+  const maxIndex = () => Math.max(0, total - perView());
+
+  let index = 0;
+  let playing = true;
+  let timer = null;
+  const INTERVAL = 3500;
+
+  function update() {
+    const pv = perView();
+    if (index > maxIndex()) index = 0;
+    const slide = slides[0];
+    const slideW = slide.getBoundingClientRect().width;
+    const gap = parseFloat(getComputedStyle(track).gap) || 12;
+    const offset = (slideW + gap) * index;
+    track.style.transform = `translateX(-${offset}px)`;
+    // dots
+    dotsWrap.querySelectorAll('.polf-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === index);
+    });
+  }
+
+  function buildDots() {
+    dotsWrap.innerHTML = '';
+    const count = maxIndex() + 1;
+    for (let i = 0; i < count; i++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'polf-dot' + (i === index ? ' active' : '');
+      b.setAttribute('aria-label', (i + 1) + '번째 카드로 이동');
+      b.addEventListener('click', () => {
+        index = i;
+        update();
+        restart();
+      });
+      dotsWrap.appendChild(b);
+    }
+  }
+
+  function next() {
+    const mi = maxIndex();
+    index = index >= mi ? 0 : index + 1;
+    update();
+  }
+  function prev() {
+    const mi = maxIndex();
+    index = index <= 0 ? mi : index - 1;
+    update();
+  }
+  function start() {
+    stop();
+    if (!playing) return;
+    timer = setInterval(next, INTERVAL);
+  }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+  function restart() {
+    if (playing) start();
+  }
+
+  prevBtn.addEventListener('click', () => { prev(); restart(); });
+  nextBtn.addEventListener('click', () => { next(); restart(); });
+  toggleBtn.addEventListener('click', () => {
+    playing = !playing;
+    toggleBtn.classList.toggle('paused', !playing);
+    toggleBtn.setAttribute('aria-label', playing ? '일시정지' : '재생');
+    if (playing) start(); else stop();
+  });
+
+  // pause on hover, resume on leave
+  card.addEventListener('mouseenter', stop);
+  card.addEventListener('mouseleave', () => { if (playing) start(); });
+
+  // pause when tab hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop();
+    else if (playing) start();
+  });
+
+  // rebuild on resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (index > maxIndex()) index = maxIndex();
+      buildDots();
+      update();
+    }, 120);
+  });
+
+  // init
+  buildDots();
+  update();
+  start();
+})();
+
+// ====== 거래내역 매칭 현황 filter + collapse ======
+(function(){
+  const list = document.getElementById('wmList');
+  const collapse = document.getElementById('wmCollapse');
+  const toggle = document.getElementById('wmToggle');
+  if (!list || !collapse || !toggle) return;
+
+  const summaryBoxes = document.querySelectorAll('.wm-summary__box[data-wm-filter]');
+  const items = list.querySelectorAll('.wm-item');
+
+  function syncActive(mode) {
+    summaryBoxes.forEach(box => {
+      const on = box.getAttribute('data-wm-filter') === mode;
+      box.classList.toggle('is-active', on);
+    });
+  }
+
+  function applyFilter(mode) {
+    items.forEach(item => {
+      let show = true;
+      if (mode === 'done') show = item.classList.contains('wm-item--done');
+      else if (mode === 'incomplete') show = item.classList.contains('wm-item--incomplete');
+      else show = true;
+      item.hidden = !show;
+    });
+    // fix first-visible separator (hide top border of first shown)
+    let firstFound = false;
+    items.forEach(item => {
+      if (!item.hidden && !firstFound) {
+        item.setAttribute('data-wm-first', '');
+        firstFound = true;
+      } else {
+        item.removeAttribute('data-wm-first');
+      }
+    });
+    syncActive(mode);
+  }
+
+  function setExpanded(open) {
+    collapse.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? '내역 접기' : '내역 펼치기');
+  }
+
+  // Toggle button click: expand/collapse without changing filter
+  toggle.addEventListener('click', () => {
+    const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+    setExpanded(!isOpen);
+  });
+
+  // Summary box click: apply filter AND auto-expand list
+  summaryBoxes.forEach(box => {
+    box.addEventListener('click', () => {
+      applyFilter(box.getAttribute('data-wm-filter'));
+      setExpanded(true);
+    });
+  });
+
+  // initial: collapsed, default filter 대기(incomplete) pre-applied
+  applyFilter('incomplete');
+  setExpanded(false);
+})();
+</script>
+
+<script>
+(function() {
+  const btn = document.getElementById('shMonthBtn');
+  const lbl = document.getElementById('shMonthLabel');
+  const pop = document.getElementById('shMonthPop');
+  const yrEl = document.getElementById('shPopYear');
+  const grid = document.getElementById('shPopGrid');
+  const prev = document.getElementById('shPrev');
+  const next = document.getElementById('shNext');
+  if (!btn || !pop) return;
+
+  let state = { year: 2026, month: 4 };
+  // try restore
+  try {
+    const s = JSON.parse(localStorage.getItem('bizfin-period') || 'null');
+    if (s && s.year && s.month) state = s;
+  } catch (e) {}
+
+  function fmtLabel() {
+    const mm = String(state.month).padStart(2, '0');
+    lbl.textContent = state.year + '년 ' + mm + '월';
+  }
+  function renderPop() {
+    yrEl.textContent = state.year;
+    grid.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', Number(b.dataset.m) === state.month);
+    });
+  }
+  function persist() {
+    try { localStorage.setItem('bizfin-period', JSON.stringify(state)); } catch (e) {}
+  }
+  function openPop(open) {
+    pop.hidden = !open;
+    btn.setAttribute('aria-expanded', String(!!open));
+    if (open) renderPop();
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openPop(pop.hidden);
+  });
+  document.addEventListener('click', (e) => {
+    if (!pop.hidden && !pop.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+      openPop(false);
+    }
+  });
+  pop.addEventListener('click', (e) => e.stopPropagation());
+
+  pop.querySelectorAll('[data-yr-step]').forEach(b => {
+    b.addEventListener('click', () => {
+      state.year += Number(b.dataset.yrStep);
+      renderPop();
+    });
+  });
+  grid.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      state.month = Number(b.dataset.m);
+      fmtLabel();
+      renderPop();
+      persist();
+      openPop(false);
+    });
+  });
+
+  function step(delta) {
+    state.month += delta;
+    if (state.month < 1) { state.month = 12; state.year -= 1; }
+    if (state.month > 12) { state.month = 1; state.year += 1; }
+    fmtLabel();
+    persist();
+  }
+  if (prev) prev.addEventListener('click', () => step(-1));
+  if (next) next.addEventListener('click', () => step(1));
+
+  fmtLabel();
+})();
+</script>
+
+
+</body></html>
